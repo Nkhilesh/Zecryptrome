@@ -14,11 +14,11 @@ let current = null; // the loan currently in the calculator
 
 // ---------- helpers ----------
 function loadLoans() {
-    try { return JSON.parse(localStorage.getItem(LOANS_KEY)) || []; } catch (e) { return []; }
+    try { return JSON.parse(AppStorage.getItem(LOANS_KEY)) || []; } catch (e) { return []; }
 }
 function persist() {
     try {
-        localStorage.setItem(LOANS_KEY, JSON.stringify(loans));
+        AppStorage.setItem(LOANS_KEY, JSON.stringify(loans));
     } catch (e) {
         alert("Couldn't save: this browser's storage is full or blocked.");
     }

@@ -38,14 +38,14 @@ let vehicles = []; // filled from the JSON, each with numeric `from` / `to` year
 // ---------- presets (saved in the browser) ----------
 function loadPresets() {
     try {
-        return JSON.parse(localStorage.getItem(PRESET_KEY)) || {};
+        return JSON.parse(AppStorage.getItem(PRESET_KEY)) || {};
     } catch (e) {
         return {};
     }
 }
 function savePresets() {
     try {
-        localStorage.setItem(PRESET_KEY, JSON.stringify(presets));
+        AppStorage.setItem(PRESET_KEY, JSON.stringify(presets));
         return true;
     } catch (e) {
         return false;

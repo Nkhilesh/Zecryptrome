@@ -48,10 +48,10 @@ const prettyDate = (iso) =>
     iso ? new Date(iso + "T00:00").toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "No date";
 
 function loadHistory() {
-    try { return JSON.parse(localStorage.getItem(HISTORY_KEY)) || []; } catch (e) { return []; }
+    try { return JSON.parse(AppStorage.getItem(HISTORY_KEY)) || []; } catch (e) { return []; }
 }
 function saveHistory(list) {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(list)); // throws if storage is full/blocked
+    AppStorage.setItem(HISTORY_KEY, JSON.stringify(list)); // throws if storage is full/blocked
 }
 
 // ---------- mode ----------

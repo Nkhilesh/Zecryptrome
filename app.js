@@ -64,7 +64,7 @@ const DEFAULT_CARD_CATEGORIES = ["Fuel", "Groceries", "Bills", "Savings"];
 const CARD_CATEGORIES = [...EXPENSE_CATEGORIES, "Savings"];
 function loadCardCategories() {
   try {
-    const saved = JSON.parse(localStorage.getItem(CARD_PREFERENCES_KEY));
+    const saved = JSON.parse(AppStorage.getItem(CARD_PREFERENCES_KEY));
     if (Array.isArray(saved)) return [...new Set(saved.filter((c) => CARD_CATEGORIES.includes(c)))];
   } catch (e) {}
   return [...DEFAULT_CARD_CATEGORIES];
@@ -96,7 +96,7 @@ function renderCategoryCards(byCategory) {
 
 function saveCardCategories() {
   let message = "Preferences saved on this browser.";
-  try { localStorage.setItem(CARD_PREFERENCES_KEY, JSON.stringify(cardCategories)); }
+  try { AppStorage.setItem(CARD_PREFERENCES_KEY, JSON.stringify(cardCategories)); }
   catch (e) { message = "Updated for now. Browser storage is unavailable, so preferences could not be saved."; }
   document.getElementById("card-save-status").textContent = message;
   render();
@@ -197,7 +197,7 @@ function render() {
 
 document.getElementById("theme-btn").addEventListener("click", () => {
   const dark = document.documentElement.classList.toggle("dark");
-  try { localStorage.setItem("theme", dark ? "dark" : "light"); } catch (e) {}
+  try { AppStorage.setItem("theme", dark ? "dark" : "light"); } catch (e) {}
 });
 
 // Category list and auto-categorise from the description (expenses-store.js)

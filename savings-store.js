@@ -1,5 +1,5 @@
 // Savings data, shared by the Savings page and the home dashboard.
-// Stored in this browser's localStorage. Money is in whole cents.
+// Stored through AppStorage (Supabase with a per-account local cache). Money is in whole cents.
 //
 // Shape: {
 //   goals:        [{ id, name, kind, targetCents, targetDate: "YYYY-MM-DD", createdAt: "YYYY-MM-DD" }]
@@ -12,7 +12,7 @@ const GOAL_KINDS = ["Car", "Wedding", "House", "Holiday", "Emergency fund", "Edu
 
 function loadSavings() {
     try {
-        const data = JSON.parse(localStorage.getItem(SAVINGS_KEY));
+        const data = JSON.parse(AppStorage.getItem(SAVINGS_KEY));
         if (data) return { goals: data.goals || [], transactions: data.transactions || [] };
     } catch (e) {}
     return { goals: [], transactions: [] };
@@ -20,7 +20,7 @@ function loadSavings() {
 
 // Throws if storage is full or blocked
 function saveSavings(data) {
-    localStorage.setItem(SAVINGS_KEY, JSON.stringify(data));
+    AppStorage.setItem(SAVINGS_KEY, JSON.stringify(data));
 }
 
 const hasSavingsData = (data) => data.goals.length > 0 || data.transactions.length > 0;

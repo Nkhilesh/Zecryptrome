@@ -58,8 +58,8 @@ function loadAll() {
         try { saveExpenseData(expData); } catch (e) {}
     }
     let loans = [], scans = [];
-    try { loans = JSON.parse(localStorage.getItem("loans.v1")) || []; } catch (e) {}
-    try { scans = JSON.parse(localStorage.getItem("scan.history.v1")) || []; } catch (e) {}
+    try { loans = JSON.parse(AppStorage.getItem("loans.v1")) || []; } catch (e) {}
+    try { scans = JSON.parse(AppStorage.getItem("scan.history.v1")) || []; } catch (e) {}
     return { expData, incomeData: loadIncome(), savingsData: loadSavings(), loans, scans };
 }
 
@@ -145,7 +145,7 @@ let viewMk = calMk(new Date());
 let selected = todayIso;
 let enabled = new Set(Object.keys(KINDS));
 try {
-    const saved = JSON.parse(localStorage.getItem(FILTER_KEY));
+    const saved = JSON.parse(AppStorage.getItem(FILTER_KEY));
     if (Array.isArray(saved)) enabled = new Set(saved.filter((k) => KINDS[k]));
 } catch (e) {}
 
@@ -195,7 +195,7 @@ function renderFilters() {
         b.append(k.label);
         b.addEventListener("click", () => {
             if (on) enabled.delete(kind); else enabled.add(kind);
-            try { localStorage.setItem(FILTER_KEY, JSON.stringify([...enabled])); } catch (e) {}
+            try { AppStorage.setItem(FILTER_KEY, JSON.stringify([...enabled])); } catch (e) {}
             render();
         });
         box.appendChild(b);

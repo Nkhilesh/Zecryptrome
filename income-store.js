@@ -1,5 +1,5 @@
 // Income data, shared by the Income page and the home dashboard.
-// Stored in this browser's localStorage. Money is in whole cents.
+// Stored through AppStorage (Supabase with a per-account local cache). Money is in whole cents.
 //
 // Shape: {
 //   entries:   [{ id, type, source, amountCents, date: "YYYY-MM-DD" }]          one-off income
@@ -15,7 +15,7 @@ function incomeMonthKey(d = new Date()) {
 
 function loadIncome() {
     try {
-        const data = JSON.parse(localStorage.getItem(INCOME_KEY));
+        const data = JSON.parse(AppStorage.getItem(INCOME_KEY));
         if (data) return { entries: data.entries || [], recurring: data.recurring || [] };
     } catch (e) {}
     return { entries: [], recurring: [] };
@@ -23,7 +23,7 @@ function loadIncome() {
 
 // Throws if storage is full or blocked
 function saveIncome(data) {
-    localStorage.setItem(INCOME_KEY, JSON.stringify(data));
+    AppStorage.setItem(INCOME_KEY, JSON.stringify(data));
 }
 
 const hasIncomeData = (data) => data.entries.length > 0 || data.recurring.length > 0;
@@ -51,7 +51,7 @@ const sumCents = (list) => list.reduce((s, e) => s + e.amountCents, 0);
 // Expenses recorded through the Scan page (grocery receipts + bills) for one month
 function recordedExpensesForMonth(mk) {
     let history = [];
-    try { history = JSON.parse(localStorage.getItem("scan.history.v1")) || []; } catch (e) {}
+    try { history = JSON.parse(AppStorage.getItem("scan.history.v1")) || []; } catch (e) {}
     let groceries = 0, bills = 0;
     for (const r of history) {
         if (r.kind === "grocery" && (r.date || "").startsWith(mk)) groceries += r.totalCents;

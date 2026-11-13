@@ -1,5 +1,5 @@
 // Expenses data, shared by the Expenses page and the home dashboard.
-// Stored in this browser's localStorage. Money is in whole cents.
+// Stored through AppStorage (Supabase with a per-account local cache). Money is in whole cents.
 //
 // Shape: {
 //   expenses:      [{ id, description, amountCents, category, date: "YYYY-MM-DD", note, subscriptionId? }]
@@ -55,7 +55,7 @@ const newExpenseId = () => Date.now() * 1000 + (idCounter++ % 1000);
 
 function loadExpenseData() {
     let data = null;
-    try { data = JSON.parse(localStorage.getItem(EXPENSES_KEY)); } catch (e) {}
+    try { data = JSON.parse(AppStorage.getItem(EXPENSES_KEY)); } catch (e) {}
     data = data || {};
     return {
         expenses: data.expenses || [],
@@ -67,7 +67,7 @@ function loadExpenseData() {
 
 // Throws if storage is full or blocked
 function saveExpenseData(data) {
-    localStorage.setItem(EXPENSES_KEY, JSON.stringify(data));
+    AppStorage.setItem(EXPENSES_KEY, JSON.stringify(data));
 }
 
 const hasExpenseData = (data) => data.expenses.length > 0 || data.subscriptions.length > 0;
@@ -112,7 +112,7 @@ function subscriptionMonthly(s) {
 // Grocery receipts and bills from the Scan page, shaped like expenses (read-only here)
 function scannedExpenses() {
     let history = [];
-    try { history = JSON.parse(localStorage.getItem("scan.history.v1")) || []; } catch (e) {}
+    try { history = JSON.parse(AppStorage.getItem("scan.history.v1")) || []; } catch (e) {}
     const out = [];
     for (const r of history) {
         if (r.kind === "grocery") {

@@ -19,6 +19,7 @@ const LEVEL_STYLES = {
 };
 
 // ---------- helpers ----------
+
 function save(rerender = true) {
     try {
         saveExpenseData(data);
@@ -113,8 +114,8 @@ function addExpense(expense, label) {
     data.expenses.push(entry);
     save();
     const warning = limitWarning(entry.category);
-    toast(`${label || "Added"} ${entry.description} · ${formatMoney(entry.amountCents)}.${warning ? " ⚠ " + warning : ""}`, () => {
-        data.expenses = data.expenses.filter((e) => e.id !== entry.id);
+    toast(`${label || "Added"} ${entry.description} ? ${formatMoney(entry.amountCents)}. ${warning}`, () => {
+        data.expenses = data.expenses.filter(e => e.id !== entry.id);
         save();
     });
 }

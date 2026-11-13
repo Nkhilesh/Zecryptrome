@@ -38,7 +38,7 @@ function loadSources(today = new Date()) {
         try { saveExpenseData(expData); } catch (e) {}
     }
     let loans = [];
-    try { loans = JSON.parse(localStorage.getItem(INS_LOANS_KEY)) || []; } catch (e) {}
+    try { loans = JSON.parse(AppStorage.getItem(INS_LOANS_KEY)) || []; } catch (e) {}
     return {
         today,
         incomeData: loadIncome(),
