@@ -45,12 +45,12 @@
         <h2 class="font-semibold">Available subscriptions</h2>
         <button id="newService" type="button" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100 dark:border-neutral-700 dark:hover:bg-neutral-800">+ Add new subscription</button>
       </div>
-      <input id="search" type="search" placeholder="Search Netflix, Spotify, iCloud…"
+      <input id="search" type="search" placeholder="Search Netflix, Canal+, Spotify…"
         class="mt-3 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
       <div id="groups" class="mt-3 flex flex-wrap gap-2"></div>
       <div id="catalog" class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3"></div>
       <p id="noResults" class="mt-3 hidden text-sm text-slate-500 dark:text-neutral-400">No match. Use “+ Add new subscription” to add it yourself.</p>
-      <p class="mt-4 text-xs text-slate-500 dark:text-neutral-400">Prices are typical amounts in rupees and may differ from your bill. You can change the price when you add a plan.</p>
+      <p id="priceInfo" class="mt-4 text-xs text-slate-500 dark:text-neutral-400"></p>
     </section>
 
     <button id="add-btn" aria-label="Add new subscription"
@@ -70,22 +70,15 @@
         </div>
       </div>
       <fieldset>
-        <legend class="mb-2 text-sm text-slate-600 dark:text-neutral-300">Choose your plan</legend>
+        <legend id="planLegend" class="mb-2 text-sm text-slate-600 dark:text-neutral-300">Choose your plan</legend>
         <div id="planOptions" class="space-y-2"></div>
       </fieldset>
-      <label class="block text-sm">
-        <span class="text-slate-600 dark:text-neutral-300">Price you pay (Rs)</span>
-        <input name="amount" type="number" step="0.01" min="0.01" required
+      <label id="priceWrap" class="block text-sm">
+        <span id="priceLabel" class="text-slate-600 dark:text-neutral-300">Price you pay (Rs per month)</span>
+        <input id="priceInput" type="number" step="any" inputmode="decimal"
           class="mt-1 w-full rounded-lg border p-2 dark:border-neutral-700 dark:bg-neutral-900">
       </label>
-      <label class="block text-sm">
-        <span id="dateLabel" class="text-slate-600 dark:text-neutral-300">First charge date</span>
-        <input name="nextDate" type="date" required class="mt-1 w-full rounded-lg border p-2 dark:border-neutral-700 dark:bg-neutral-900">
-      </label>
-      <label class="block text-sm">
-        <span class="text-slate-600 dark:text-neutral-300">Spending category</span>
-        <select name="category" class="mt-1 w-full rounded-lg border p-2 dark:border-neutral-700 dark:bg-neutral-900"></select>
-      </label>
+      <p id="planSource" class="text-xs text-slate-500 dark:text-neutral-400"></p>
       <p id="planNote" class="text-xs text-slate-500 dark:text-neutral-400"></p>
       <p id="planError" class="text-sm text-red-500"></p>
       <div class="flex gap-2">
@@ -103,7 +96,7 @@
   <dialog id="serviceDialog" class="max-h-[90vh] w-[90%] max-w-md rounded-2xl p-6 backdrop:bg-black/60 dark:border dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100">
     <form id="serviceForm" class="space-y-3">
       <h2 id="serviceTitle" class="text-lg font-semibold">Add new subscription</h2>
-      <input name="name" placeholder="Name (e.g. Gym, Deezer, my.t TV)" required
+      <input name="name" placeholder="Name (e.g. Gym, Deezer)" required
         class="w-full rounded-lg border p-2 dark:border-neutral-700 dark:bg-neutral-900">
       <label class="block text-sm">
         <span class="text-slate-600 dark:text-neutral-300">Website (optional, used for the logo)</span>
@@ -116,7 +109,6 @@
         </label>
         <div id="servicePreview"></div>
       </div>
-      <select name="category" class="w-full rounded-lg border p-2 dark:border-neutral-700 dark:bg-neutral-900"></select>
       <div>
         <p class="text-sm text-slate-600 dark:text-neutral-300">Plans</p>
         <div id="planRows" class="mt-2 space-y-2"></div>
