@@ -398,11 +398,41 @@ function render() {
 
     renderHealth(ins.health);
     renderSummary(ins);
+    renderMauritiusComparison(ins);
     renderTop(ins);
     renderHistory(ins);
     renderUnusual(ins);
     renderForecast(ins);
     renderSuggestions(ins);
+}
+
+// HBS 2023: average monthly household consumption expenditure, in cents.
+// Percentage difference uses the official benchmark as the denominator.
+const MAURITIUS_HBS_2023_CENTS = 4187000;
+function mauritiusComparison(cents) {
+    const difference = cents - MAURITIUS_HBS_2023_CENTS;
+    return { difference, percentage: Math.abs(difference) / MAURITIUS_HBS_2023_CENTS * 100 };
+}
+
+function renderMauritiusComparison(ins) {
+    const v = ins.view;
+    const headline = $("mauritiusComparison");
+    const detail = $("mauritiusDetail");
+    if (!v.list.length) {
+        headline.textContent = "No expenses recorded for this month";
+        detail.textContent = "Record your monthly expenses to compare them with the household average.";
+        return;
+    }
+    const result = mauritiusComparison(v.spent);
+    const percentage = result.percentage.toLocaleString("en-US", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    const spending = v.projected ? "Your projected monthly spending" : "Your recorded monthly spending";
+    headline.textContent = result.difference === 0
+        ? `${spending} matches the 2023 household average.`
+        : `${spending} is ${percentage}% ${result.difference > 0 ? "above" : "below"} the 2023 household average.`;
+    detail.textContent = `${monthLabel(v.mk)}: ${formatMoney(v.spent)} compared with ${formatMoney(MAURITIUS_HBS_2023_CENTS)} per household per month.` +
+        (result.difference ? ` A difference of ${formatMoney(Math.abs(result.difference))}.` : "") +
+        (v.projected ? ` Recorded so far: ${formatMoney(v.actualSpent)}; the comparison uses the month-end estimate, which may change.` : "") +
+        " Savings and separately tracked loan repayments are excluded. Only expenses recorded in this app are included.";
 }
 
 function renderHealth(h) {
