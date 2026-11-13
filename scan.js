@@ -6,7 +6,7 @@
 //                 Needs "Cloud Vision API" enabled (and billing on) in the Google Cloud project that
 //                 owns this key. This is the same key as the Maps one in fuel.html. The key is visible
 //                 to anyone who opens the page, so restrict it to your site and to the APIs you use.
-const GOOGLE_VISION_API_KEY = "goOGLE_VISION_API_KEY"; // replace with your key, or leave blank to disable Google Vision
+const GOOGLE_VISION_API_KEY = "google api key"; // replace with your key, or leave blank to disable Google Vision
 
 const HISTORY_KEY = "scan.history.v1";
 const CATEGORIES = [...ReceiptParser.ITEM_CATEGORIES.map(([name]) => name), "Other"];

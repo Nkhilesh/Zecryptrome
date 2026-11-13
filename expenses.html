@@ -10,7 +10,7 @@
     (function () {
       let saved = null;
       try { saved = localStorage.getItem("theme"); } catch (e) {}
-      const dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      const dark = saved && saved !== "system" ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
       document.documentElement.classList.toggle("dark", dark);
     })();
   </script>

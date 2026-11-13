@@ -198,6 +198,7 @@ function renderLimits() {
     }
 }
 
+
 function renderSubscriptions() {
     const ul = $("subList");
     ul.innerHTML = "";

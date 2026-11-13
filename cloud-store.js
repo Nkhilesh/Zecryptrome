@@ -109,7 +109,7 @@
       Object.assign(cache, pending);
       persist();
       button('import').hidden = data.length > 0 || Object.keys(pending).length > 0;
-      if (cache.theme != null) document.documentElement.classList.toggle('dark', cache.theme === 'dark');
+      if (cache.theme != null) document.documentElement.classList.toggle('dark', cache.theme === 'system' ? matchMedia('(prefers-color-scheme: dark)').matches : cache.theme === 'dark');
       message(`Signed in as ${user.email}. Data loaded from Supabase.`);
       main.inert = false;
       void flush().catch(() => {});
