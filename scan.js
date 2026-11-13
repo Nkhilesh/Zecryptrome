@@ -3,10 +3,8 @@
 // OCR engines:
 //  - "tesseract": Tesseract.js runs in the browser. Free, no key, the photo never leaves the device.
 //  - "vision":    Google Cloud Vision (DOCUMENT_TEXT_DETECTION). Better on crumpled or faded receipts.
-//                 Needs "Cloud Vision API" enabled (and billing on) in the Google Cloud project that
-//                 owns this key. This is the same key as the Maps one in fuel.html. The key is visible
-//                 to anyone who opens the page, so restrict it to your site and to the APIs you use.
-const GOOGLE_VISION_API_KEY = "google api key"; // replace with your key, or leave blank to disable Google Vision
+//                 Called through the "hyper-worker" Supabase Edge Function, which keeps the API key in the
+//                 GOOGLE_VISION_API_KEY secret so it never reaches the browser.
 
 const HISTORY_KEY = "scan.history.v1";
 const CATEGORIES = [...ReceiptParser.ITEM_CATEGORIES.map(([name]) => name), "Other"];
@@ -74,13 +72,7 @@ $("modeGroceries").addEventListener("click", () => setMode("groceries"));
 $("modeBills").addEventListener("click", () => setMode("bills"));
 
 // ---------- engine ----------
-if (GOOGLE_VISION_API_KEY) {
-    engineSelect.value = "vision"; // default to Google Vision when a key is set
-} else {
-    const opt = engineSelect.querySelector('option[value="vision"]');
-    opt.disabled = true;
-    opt.textContent = "Google Vision (add API key in scan.js)";
-}
+engineSelect.value = "vision"; // default to Google Vision (via the "hyper-worker" Edge Function)
 
 // ---------- photo ----------
 function loadImage(file) {
@@ -221,21 +213,11 @@ async function ocrVision() {
     const image = await imageForVision();
     console.info(`Google Vision: sending ${(image.content.length * 0.75 / 1024 / 1024).toFixed(1)} MB, ${image.note}`);
     setProgress(0.3, image.note === "original quality" ? "Sending original photo to Google Vision…" : "Sending to Google Vision…");
-    const res = await fetch(
-        `https://vision.googleapis.com/v1/images:annotate?key=${encodeURIComponent(GOOGLE_VISION_API_KEY)}`,
-        {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                requests: [{
-                    image: { content: image.content },
-                    features: [{ type: "DOCUMENT_TEXT_DETECTION" }],
-                    imageContext: { languageHints: ["en", "fr"] },
-                }],
-            }),
-        }
-    );
-    const json = await res.json();
+    const { data: json, error: fnError } = await db.functions.invoke("hyper-worker", {
+        body: { image: image.content },
+    });
+    if (fnError) throw new Error(`Could not reach the OCR function: ${fnError.message}`);
+    const res = { ok: true };
     const err = json.error || json.responses?.[0]?.error;
     if (!res.ok || err) {
         const msg = err?.message || `HTTP ${res.status}`;
