@@ -11,10 +11,10 @@
 // Optional service fields:
 //   note       - extra text shown in the plan window (e.g. availability caveats)
 //   editablePrice - the price box is shown so you can enter what you actually pay
+//   aliases    - other names people use for it, to recognise subscriptions typed on the Expenses page
+//   sourceText - replaces the standard "where these prices come from" sentence
 // Optional plan field:
 //   askPrice   - no listed price: the user must type theirs (needs editablePrice)
-//   includedIn - this service comes free with another one; its card opens that
-//                service's plans instead of adding a second charge
 //
 // Services you add yourself are stored in this browser under CUSTOM_SERVICES_KEY,
 // in the final shape: { id, name, domain, color, group, category, plans: [{ name, amountCents, cycle }] }
@@ -35,18 +35,15 @@ const RAW_CATALOG = [
         { name: "Standard", usd: 7.99, cycle: "monthly" },
         { name: "Premium", usd: 9.99, cycle: "monthly" },
     ] },
-    { id: "disneyplus", name: "Disney+", domain: "disneyplus.com", color: "#0E3D8C", group: "Video", priceSource: "us",
+    { id: "disneyplus", name: "Disney+", aliases: ["disney"], domain: "disneyplus.com", color: "#0E3D8C", group: "Video", priceSource: "us",
       note: "Disney+ isn't officially offered in Mauritius.", plans: [
         { name: "Basic (with ads)", usd: 12.49, cycle: "monthly" },
         { name: "Premium", usd: 21.49, cycle: "monthly" },
         { name: "Premium (yearly)", usd: 214.99, cycle: "yearly" },
     ] },
-    // Since September 2026 Apple TV isn't sold on its own in Mauritius: it comes with every iCloud+ plan
-    { id: "appletv", name: "Apple TV", domain: "tv.apple.com", color: "#000000", group: "Video", includedIn: "icloud",
-      note: "In Mauritius, Apple TV and Apple Arcade are included with every iCloud+ plan and are no longer sold separately. Pick your iCloud+ plan.", plans: [] },
     // TV providers: `multi` lets you tick several packs (e.g. Sport + Ciné). Each ticked
     // pack is saved as its own subscription. `section` groups the list in the plan window.
-    { id: "canalplus", name: "Canal+ Maurice", domain: "canalplus.com", color: "#000000", group: "TV", priceSource: "mu", multi: true, plans: [
+    { id: "canalplus", name: "Canal+ Maurice", aliases: ["canal+", "canal plus"], domain: "canalplus.com", color: "#000000", group: "TV", priceSource: "mu", multi: true, plans: [
         { section: "Packs", name: "100% Digital (no decoder)", rs: 250, cycle: "monthly" },
         { section: "Packs", name: "Sport", rs: 500, cycle: "monthly" },
         { section: "Packs", name: "Ciné & Séries Max", rs: 500, cycle: "monthly" },
@@ -65,18 +62,18 @@ const RAW_CATALOG = [
         { section: "Options", name: "Netflix Premium", rs: 460, cycle: "monthly" },
         { section: "Options", name: "2nd TV", rs: 400, cycle: "monthly" },
     ] },
-    { id: "primevideo", name: "Prime Video", domain: "primevideo.com", color: "#00A8E1", group: "Video", priceSource: "mu-old", plans: [
+    { id: "primevideo", name: "Prime Video", aliases: ["amazon prime"], domain: "primevideo.com", color: "#00A8E1", group: "Video", priceSource: "mu-old", plans: [
         { name: "Monthly", usd: 5.99, cycle: "monthly" },
     ] },
-    { id: "youtube", name: "YouTube Premium", domain: "youtube.com", color: "#FF0000", group: "Video", priceSource: "us", plans: [
+    { id: "youtube", name: "YouTube Premium", aliases: ["youtube"], domain: "youtube.com", color: "#FF0000", group: "Video", priceSource: "us", plans: [
         { name: "Individual", usd: 15.99, cycle: "monthly" },
         { name: "Family", usd: 26.99, cycle: "monthly" },
         { name: "Student", usd: 8.99, cycle: "monthly" },
     ] },
     { id: "crunchyroll", name: "Crunchyroll", domain: "crunchyroll.com", color: "#F47521", group: "Video", priceSource: "us", plans: [
         { name: "Fan", usd: 9.99, cycle: "monthly" },
-        { name: "Mega Fan", usd: 13.99, cycle: "monthly" },
         { name: "Fan (yearly)", usd: 99.99, cycle: "yearly" },
+        { name: "Mega Fan", usd: 13.99, cycle: "monthly" },
         { name: "Mega Fan (yearly)", usd: 139.99, cycle: "yearly" },
         { name: "Ultimate Fan", usd: 17.99, cycle: "monthly" },
         { name: "Ultimate Fan (yearly)", usd: 179.99, cycle: "yearly" },
@@ -109,14 +106,17 @@ const RAW_CATALOG = [
     ] },
 
     // Cloud storage
-    { id: "icloud", name: "iCloud+", domain: "icloud.com", color: "#3693F3", group: "Cloud", priceSource: "mu", plans: [
+    { id: "icloud", name: "iCloud+", aliases: ["icloud"], domain: "icloud.com", color: "#3693F3", group: "Cloud", priceSource: "mu",
+      note: "In Mauritius every iCloud+ plan also includes Apple TV and Apple Arcade (Apple no longer sells them separately).", plans: [
         { name: "50 GB", usd: 1.19, cycle: "monthly" },
         { name: "200 GB", usd: 3.49, cycle: "monthly" },
         { name: "2 TB", usd: 11.99, cycle: "monthly" },
         { name: "6 TB", usd: 34.99, cycle: "monthly" },
         { name: "12 TB", usd: 69.99, cycle: "monthly" },
     ] },
-    { id: "googleone", name: "Google One", domain: "one.google.com", color: "#4285F4", group: "Cloud", priceSource: "us", plans: [
+    { id: "googleone", name: "Google One", domain: "one.google.com", color: "#4285F4", group: "Cloud", priceSource: "us",
+      sourceText: "Lite is the price Google shows in Mauritius. The other plans are US prices, so yours may be lower.", plans: [
+        { name: "Lite 30 GB", usd: 0.89, cycle: "monthly" },
         { name: "Basic 100 GB", usd: 1.99, cycle: "monthly" },
         { name: "Basic 100 GB (yearly)", usd: 19.99, cycle: "yearly" },
         { name: "AI Plus 2 TB", usd: 9.99, cycle: "monthly" },
@@ -141,13 +141,13 @@ const RAW_CATALOG = [
     ] },
 
     // Gaming
-    { id: "xbox", name: "Xbox Game Pass", domain: "xbox.com", color: "#107C10", group: "Gaming", category: "Entertainment", priceSource: "us", plans: [
+    { id: "xbox", name: "Xbox Game Pass", aliases: ["xbox", "game pass"], domain: "xbox.com", color: "#107C10", group: "Gaming", category: "Entertainment", priceSource: "us", plans: [
         { name: "Essential", usd: 9.99, cycle: "monthly" },
         { name: "Premium", usd: 14.99, cycle: "monthly" },
         { name: "PC Game Pass", usd: 13.99, cycle: "monthly" },
         { name: "Ultimate", usd: 22.99, cycle: "monthly" },
     ] },
-    { id: "psplus", name: "PlayStation Plus", domain: "playstation.com", color: "#0070D1", group: "Gaming", category: "Entertainment", priceSource: "us", plans: [
+    { id: "psplus", name: "PlayStation Plus", aliases: ["playstation", "ps plus"], domain: "playstation.com", color: "#0070D1", group: "Gaming", category: "Entertainment", priceSource: "us", plans: [
         { name: "Essential", usd: 10.99, cycle: "monthly" },
         { name: "Extra", usd: 16.99, cycle: "monthly" },
         { name: "Premium", usd: 19.99, cycle: "monthly" },
@@ -157,7 +157,7 @@ const RAW_CATALOG = [
     ] },
 
     // Productivity
-    { id: "microsoft365", name: "Microsoft 365", domain: "microsoft.com", color: "#D83B01", group: "Productivity", priceSource: "us", plans: [
+    { id: "microsoft365", name: "Microsoft 365", aliases: ["microsoft", "office 365"], domain: "microsoft.com", color: "#D83B01", group: "Productivity", priceSource: "us", plans: [
         { name: "Basic", usd: 1.99, cycle: "monthly" },
         { name: "Basic (yearly)", usd: 19.99, cycle: "yearly" },
         { name: "Personal", usd: 9.99, cycle: "monthly" },
@@ -165,15 +165,15 @@ const RAW_CATALOG = [
         { name: "Family", usd: 12.99, cycle: "monthly" },
         { name: "Family (yearly)", usd: 129.99, cycle: "yearly" },
     ] },
-    { id: "canva", name: "Canva Pro", domain: "canva.com", color: "#00C4CC", group: "Productivity", priceSource: "us", plans: [
+    { id: "canva", name: "Canva Pro", aliases: ["canva"], domain: "canva.com", color: "#00C4CC", group: "Productivity", priceSource: "us", plans: [
         { name: "Monthly", usd: 18, cycle: "monthly" },
         { name: "Yearly", usd: 144, cycle: "yearly" },
     ] },
-    { id: "duolingo", name: "Duolingo Super", domain: "duolingo.com", color: "#58CC02", group: "Productivity", priceSource: "us", plans: [
+    { id: "duolingo", name: "Duolingo Super", aliases: ["duolingo"], domain: "duolingo.com", color: "#58CC02", group: "Productivity", priceSource: "us", plans: [
         { name: "Monthly", usd: 12.99, cycle: "monthly" },
         { name: "Yearly", usd: 84.99, cycle: "yearly" },
     ] },
-    { id: "adobe", name: "Adobe Creative Cloud", domain: "adobe.com", color: "#FA0F00", group: "Productivity", priceSource: "us",
+    { id: "adobe", name: "Adobe Creative Cloud", aliases: ["adobe"], domain: "adobe.com", color: "#FA0F00", group: "Productivity", priceSource: "us",
       note: "Prices are for a yearly commitment paid monthly. Paying month to month costs more.", plans: [
         { name: "Creative Cloud Pro (all apps)", usd: 69.99, cycle: "monthly" },
         { name: "Creative Cloud Standard", usd: 54.99, cycle: "monthly" },
@@ -183,7 +183,7 @@ const RAW_CATALOG = [
     ] },
 
     // Health & fitness
-    { id: "gym", name: "Gym membership", color: "#0d9488", group: "Fitness", category: "Health", priceSource: "mu", editablePrice: true,
+    { id: "gym", name: "Gym membership", aliases: ["gym"], color: "#0d9488", group: "Fitness", category: "Health", priceSource: "mu", editablePrice: true,
       note: "Prices differ between gyms and offers, so change the price to what you pay. Joining fees aren't included (SPARC charges Rs 3,500).", plans: [
         { section: "MoGym 24/7", name: "MoGym Core", rs: 999, cycle: "monthly" },
         { section: "MoGym 24/7", name: "MoGym Basic", rs: 1099, cycle: "monthly" },
@@ -215,12 +215,19 @@ const allServices = () => [...SUBSCRIPTION_CATALOG, ...loadCustomServices()];
 // The service a saved subscription belongs to. Subscriptions added on the Expenses
 // page have no serviceId, so fall back to matching the name.
 function serviceForSubscription(sub, services = allServices()) {
-    if (sub.serviceId) {
-        const s = services.find((x) => x.id === sub.serviceId);
-        if (s) return s;
+    // Added on the Subscriptions page: the link is exact (null if that service was deleted)
+    if (sub.serviceId) return services.find((x) => x.id === sub.serviceId) || null;
+    // Typed by hand: the longest name or alias the subscription's name starts with,
+    // so "YouTube Music" is YouTube Music, not YouTube Premium
+    const n = String(sub.name || "").toLowerCase();
+    let best = null, bestLength = 0;
+    for (const s of services) {
+        for (const key of [s.name, ...(s.aliases || [])]) {
+            const k = key.toLowerCase();
+            if (k && n.startsWith(k) && k.length > bestLength) { best = s; bestLength = k.length; }
+        }
     }
-    const n = sub.name.toLowerCase();
-    return services.find((x) => n.startsWith(x.name.toLowerCase()) || n.startsWith(x.id)) || null;
+    return best;
 }
 
 // Logo tile: the service's site icon, or its first letter on its brand colour when

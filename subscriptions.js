@@ -8,12 +8,11 @@ const planDialog = $("planDialog"), planForm = $("planForm");
 const serviceDialog = $("serviceDialog"), serviceForm = $("serviceForm");
 
 const CYCLE_WORD = { weekly: "week", monthly: "month", yearly: "year" };
-const CYCLE_LABEL = { monthly: "Every month", yearly: "Every year", weekly: "Every week" };
 
 let data = loadExpenseData();
 let customServices = loadCustomServices();
 let activeGroup = "All";
-let planContext = null;     // { service, sub }
+let planContext = null;     // { service, sub, existing } for the open plan window
 let editingServiceId = null;
 
 // ---------- helpers ----------
@@ -36,33 +35,61 @@ const prettyDate = (iso) => new Date(iso + "T00:00").toLocaleDateString("en-GB",
 const services = () => [...SUBSCRIPTION_CATALOG, ...customServices];
 const subsFor = (service) => data.subscriptions.filter((s) => serviceForSubscription(s, services())?.id === service.id);
 
-function save(message) {
+// The state a change can be undone back to. Take it before changing anything.
+const snapshot = () => JSON.stringify({ expenses: data.expenses, subscriptions: data.subscriptions });
+
+// Saves and redraws. Pass `undo` (a snapshot() from before the change) to offer Undo in the toast.
+// Returns false, and reports it, if the browser wouldn't store the data.
+function save(message, undo = null) {
     const posted = syncSubscriptions(data);
     try {
         saveExpenseData(data);
     } catch (e) {
+        // Nothing was stored, so show what is really saved instead of pretending it worked
+        data = loadExpenseData();
+        render();
         alert("Couldn't save: this browser's storage is full or blocked.");
+        return false;
     }
     render();
-    if (message) toast(message + (posted ? ` ${posted} charge${posted === 1 ? "" : "s"} added to your spending.` : ""));
+    if (message) toast(message + (posted ? ` ${posted} charge${posted === 1 ? "" : "s"} added to your spending.` : ""), undo);
+    return true;
 }
 
+// Returns false, and reports it, if the browser wouldn't store the list
 function saveCustom() {
     try {
         saveCustomServices(customServices);
+        return true;
     } catch (e) {
+        customServices = loadCustomServices(); // back to what is really saved
+        render();
         alert("Couldn't save: this browser's storage is full or blocked.");
+        return false;
     }
 }
 
 let toastTimer = null;
-function toast(text) {
-    const el = $("toast");
-    el.textContent = text;
-    el.classList.remove("hidden");
+let toastUndo = null; // snapshot to go back to if Undo is pressed
+function toast(text, undo = null) {
+    $("toastText").textContent = text;
+    toastUndo = undo;
+    $("toastUndo").classList.toggle("hidden", !undo);
+    $("toast").classList.replace("hidden", "flex");
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.add("hidden"), 3500);
+    toastTimer = setTimeout(hideToast, undo ? 8000 : 3500);
 }
+function hideToast() {
+    $("toast").classList.replace("flex", "hidden");
+    toastUndo = null;
+}
+$("toastUndo").addEventListener("click", () => {
+    const state = toastUndo;
+    hideToast();
+    if (!state) return;
+    Object.assign(data, JSON.parse(state));
+    save("Undone.");
+});
 
 function smallButton(text, onClick, extra = "") {
     const b = document.createElement("button");
@@ -122,13 +149,14 @@ function renderMySubs() {
             actions.appendChild(a);
         }
         actions.appendChild(smallButton(s.active ? "Pause" : "Resume", () => {
+            const before = snapshot();
             s.active = !s.active;
             if (s.active) {
                 // Don't back-charge the paused period: jump to the next upcoming date
                 const today = expIsoDate();
                 while (s.nextDate < today) s.nextDate = nextBillingDate(s.nextDate, s.cycle, s.day);
             }
-            save(s.active ? `${s.name} resumed.` : `${s.name} paused.`);
+            save(s.active ? `${s.name} resumed.` : `${s.name} paused.`, before);
         }));
         actions.appendChild(smallButton("Stop", () => stopSubscription(s), "text-red-500 border-red-300 dark:border-red-900"));
         ul.appendChild(li);
@@ -152,9 +180,6 @@ function renderGroups() {
     }
 }
 
-// The service this one comes free with (e.g. Apple TV -> iCloud+), if any
-const includedHost = (service) => (service.includedIn ? services().find((s) => s.id === service.includedIn) || null : null);
-
 function renderCatalog() {
     const grid = $("catalog");
     grid.innerHTML = "";
@@ -165,10 +190,8 @@ function renderCatalog() {
     $("noResults").classList.toggle("hidden", list.length > 0);
 
     for (const service of list) {
-        const host = includedHost(service);
-        const target = host || service;
-        const cheapest = Math.min(...target.plans.filter((p) => !p.askPrice).map((p) => subscriptionMonthly(p)));
-        const subscribed = subsFor(target).some((s) => s.active);
+        const cheapest = Math.min(...service.plans.filter((p) => !p.askPrice).map((p) => subscriptionMonthly(p)));
+        const subscribed = subsFor(service).some((s) => s.active);
         const card = document.createElement("button");
         card.type = "button";
         card.className = "relative flex flex-col items-start rounded-2xl border border-slate-200 p-4 text-left hover:bg-slate-50 dark:border-neutral-800 dark:hover:bg-neutral-900";
@@ -178,9 +201,7 @@ function renderCatalog() {
             <p class="p mt-0.5 text-xs text-slate-500 dark:text-neutral-400"></p>`;
         card.querySelector(".logo").replaceWith(serviceLogo(service));
         card.querySelector(".n").textContent = service.name;
-        card.querySelector(".p").textContent = host
-            ? `Included with ${host.name} · from ${formatMoney(cheapest)}/mo`
-            : `${service.plans.length} plan${service.plans.length === 1 ? "" : "s"} · from ${formatMoney(cheapest)}/mo`;
+        card.querySelector(".p").textContent = `${service.plans.length} plan${service.plans.length === 1 ? "" : "s"} · from ${formatMoney(cheapest)}/mo`;
         if (subscribed) {
             const badge = document.createElement("span");
             badge.className = "absolute right-3 top-3 rounded-full bg-teal-100 px-2 py-0.5 text-[10px] font-medium text-teal-800 dark:bg-teal-900/50 dark:text-teal-300";
@@ -245,9 +266,6 @@ function updatePlanNote() {
 }
 
 function openPlan(service, sub = null) {
-    // A service that comes with another one opens the other one's plans, with its note
-    let via = null;
-    if (includedHost(service)) { via = service; service = includedHost(service); }
     const existing = subsFor(service);
     if (service.multi) sub = null;
     else sub = sub || existing[0] || null;
@@ -268,8 +286,8 @@ function openPlan(service, sub = null) {
         : service.priceSource === "mu-old" ? "Last published Mauritius price. It couldn't be confirmed recently, so check your bill."
         : service.priceSource === "us" ? `No Mauritius price is published, so these are US prices (checked ${PRICES_CHECKED}). Yours may be lower.`
         : "";
-    const notes = [via?.note, service.note].filter(Boolean).join(" ");
-    if (notes) $("planSource").textContent = `${notes} ${$("planSource").textContent}`.trim();
+    if (service.sourceText) $("planSource").textContent = `${service.sourceText} Checked ${PRICES_CHECKED}.`;
+    if (service.note) $("planSource").textContent = `${service.note} ${$("planSource").textContent}`.trim();
 
     // Which plans start ticked: every pack you have (multi), else the plan you're on or the first
     let isChecked;
@@ -344,10 +362,28 @@ function newSubscription(service, plan, amountCents = plan.amountCents) {
     };
 }
 
+// Adds a subscription. If the same thing was stopped earlier today, the charge already
+// posted today is reused instead of charging twice. Returns true when that happened.
+function addSubscription(service, plan, amountCents = plan.amountCents) {
+    const sub = newSubscription(service, plan, amountCents);
+    const live = new Set(data.subscriptions.map((s) => s.id));
+    const paidToday = data.expenses.find((x) =>
+        x.subscriptionId != null && !live.has(x.subscriptionId) &&
+        x.date === sub.nextDate && x.description === sub.name && x.amountCents === sub.amountCents);
+    if (paidToday) {
+        paidToday.subscriptionId = sub.id;
+        sub.nextDate = nextBillingDate(sub.nextDate, sub.cycle, sub.day);
+    }
+    data.subscriptions.push(sub);
+    return Boolean(paidToday);
+}
+const ALREADY_CHARGED = " Today's charge was already in your spending.";
+
 planForm.addEventListener("submit", (e) => {
     e.preventDefault();
     const { service, sub, existing } = planContext;
     const plans = checkedPlans();
+    const before = snapshot();
 
     if (service.multi) {
         if (!plans.length && !existing.length) { $("planError").textContent = "Tick at least one pack."; return; }
@@ -358,12 +394,14 @@ planForm.addEventListener("submit", (e) => {
         data.subscriptions = data.subscriptions.filter((s) => !removed.includes(s));
         const have = new Set(existing.map((s) => s.plan));
         const added = plans.filter((p) => !have.has(p.name));
-        for (const p of added) data.subscriptions.push(newSubscription(service, p));
+        let reused = false;
+        for (const p of added) reused = addSubscription(service, p) || reused;
         planDialog.close();
+        if (!added.length && !removed.length) return; // nothing changed
         const parts = [];
         if (added.length) parts.push(`Added ${added.map((p) => p.name).join(", ")}.`);
         if (removed.length) parts.push(`Stopped ${removed.map((s) => s.plan).join(", ")}.`);
-        save(parts.join(" ") || "No changes.");
+        save(parts.join(" ") + (reused ? ALREADY_CHARGED : ""), before);
         return;
     }
 
@@ -371,18 +409,26 @@ planForm.addEventListener("submit", (e) => {
     if (!plan) { $("planError").textContent = "Choose a plan."; return; }
     const amountCents = chargeFor(plan);
     if (!(amountCents > 0)) { $("planError").textContent = plan.askPrice ? "Enter the price you pay." : "Enter a price above zero."; return; }
+    const name = planSubName(service, plan);
+    let reused = false;
     if (sub) {
+        if (sub.name === name && sub.plan === plan.name && sub.amountCents === amountCents && sub.cycle === plan.cycle) {
+            planDialog.close(); // same plan, same price: nothing to update
+            return;
+        }
         // Keeps its category and next charge date
-        Object.assign(sub, { name: planSubName(service, plan), serviceId: service.id, plan: plan.name, amountCents, cycle: plan.cycle });
-    } else data.subscriptions.push(newSubscription(service, plan, amountCents));
+        Object.assign(sub, { name, serviceId: service.id, plan: plan.name, amountCents, cycle: plan.cycle });
+        delete sub.viaId; // left over from the removed Apple TV card
+    } else reused = addSubscription(service, plan, amountCents);
     planDialog.close();
-    save(`${planSubName(service, plan)} ${sub ? "updated" : "added"}.`);
+    save(`${name} ${sub ? "updated" : "added"}.` + (reused ? ALREADY_CHARGED : ""), before);
 });
 
 function stopSubscription(s) {
     if (!confirm(`Stop "${s.name}"? Charges already added stay in your spending history.`)) return false;
+    const before = snapshot();
     data.subscriptions = data.subscriptions.filter((x) => x.id !== s.id);
-    save(`${s.name} stopped.`);
+    save(`${s.name} stopped.`, before);
     return true;
 }
 $("planStop").addEventListener("click", () => {
@@ -392,9 +438,10 @@ $("planStop").addEventListener("click", () => {
         return;
     }
     if (!confirm(`Stop all ${existing.length} ${service.name} pack${existing.length === 1 ? "" : "s"}? Charges already added stay in your spending history.`)) return;
+    const before = snapshot();
     data.subscriptions = data.subscriptions.filter((s) => !existing.includes(s));
     planDialog.close();
-    save(`${service.name} stopped.`);
+    save(`${service.name} stopped.`, before);
 });
 $("serviceEdit").addEventListener("click", () => {
     planDialog.close();
@@ -406,9 +453,9 @@ function addPlanRow(plan = null) {
     const row = document.createElement("div");
     row.className = "plan-row grid grid-cols-[1fr_6rem_auto_auto] gap-2";
     row.innerHTML = `
-        <input name="pname" placeholder="Plan name" class="min-w-0 rounded-lg border p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900">
-        <input name="pprice" type="number" step="0.01" min="0.01" placeholder="Rs" class="min-w-0 rounded-lg border p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900">
-        <select name="pcycle" class="rounded-lg border p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900">
+        <input name="pname" aria-label="Plan name" placeholder="Plan name" class="min-w-0 rounded-lg border p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900">
+        <input name="pprice" aria-label="Price in rupees" type="number" step="any" min="0" placeholder="Rs" class="min-w-0 rounded-lg border p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900">
+        <select name="pcycle" aria-label="How often it's charged" class="rounded-lg border p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900">
           <option value="monthly">/ month</option><option value="yearly">/ year</option><option value="weekly">/ week</option>
         </select>
         <button type="button" aria-label="Remove plan" class="rounded-lg px-2 text-slate-400 hover:text-red-500">✕</button>`;
@@ -432,6 +479,32 @@ function updateServicePreview() {
     $("servicePreview").replaceWith(logo);
 }
 
+// ---------- category of your own services ----------
+// The categories are the filter tabs on the page. "Other" lets you type any category,
+// which then becomes a tab of its own and appears in this list next time.
+const OTHER_GROUP = "__other__";
+// Where each category's charges go in your spending (anything else counts as Subscriptions)
+const GROUP_SPENDING = { Gaming: "Entertainment", Fitness: "Health" };
+
+function fillGroupSelect(current) {
+    const select = $("serviceGroup");
+    select.innerHTML = "";
+    // "Other" itself is covered by the "Other (type your own)" entry, left blank
+    const groups = [...new Set(services().map((s) => s.group))].filter((g) => g !== "Other");
+    if (current && current !== "Other" && !groups.includes(current)) groups.push(current);
+    select.add(new Option("Choose a category…", ""));
+    for (const g of groups) select.add(new Option(g, g));
+    select.add(new Option("Other (type your own)", OTHER_GROUP));
+    select.value = current === "Other" ? OTHER_GROUP : current || "";
+    $("serviceGroupOther").value = "";
+    $("serviceGroupOther").classList.toggle("hidden", current !== "Other");
+}
+$("serviceGroup").addEventListener("change", () => {
+    const other = $("serviceGroup").value === OTHER_GROUP;
+    $("serviceGroupOther").classList.toggle("hidden", !other);
+    if (other) $("serviceGroupOther").focus();
+});
+
 function openService(service = null) {
     editingServiceId = service ? service.id : null;
     serviceForm.reset();
@@ -439,6 +512,7 @@ function openService(service = null) {
     f.name.value = service?.name || "";
     f.domain.value = service?.domain || "";
     f.color.value = service?.color || "#0d9488";
+    fillGroupSelect(service?.group);
     $("planRows").innerHTML = "";
     (service?.plans || [null]).forEach(addPlanRow);
     $("serviceTitle").textContent = service ? "Edit subscription service" : "Add new subscription";
@@ -474,9 +548,23 @@ serviceForm.addEventListener("submit", (e) => {
         plans.push({ name: pname, amountCents, cycle: row.querySelector('[name="pcycle"]').value });
     }
     if (!name) { $("serviceError").textContent = "Enter a name."; return; }
+    const choice = $("serviceGroup").value;
+    if (!choice) { $("serviceError").textContent = "Choose a category."; return; }
+    // "Other": use what was typed (matching an existing category regardless of case),
+    // or file it under "Other" if nothing was typed
+    let group = choice;
+    if (choice === OTHER_GROUP) {
+        const typed = $("serviceGroupOther").value.trim().replace(/\s+/g, " ") || "Other";
+        group = services().map((s) => s.group).find((g) => g.toLowerCase() === typed.toLowerCase())
+            || typed.charAt(0).toUpperCase() + typed.slice(1);
+    }
     if (!plans.length) { $("serviceError").textContent = "Add at least one plan."; return; }
+    if (new Set(plans.map((p) => p.name.toLowerCase())).size !== plans.length) {
+        $("serviceError").textContent = "Give each plan a different name.";
+        return;
+    }
 
-    const fields = { name, domain: cleanDomain(f.domain.value), color: f.color.value, group: "My services", category: "Subscriptions", plans };
+    const fields = { name, domain: cleanDomain(f.domain.value), color: f.color.value, group, category: GROUP_SPENDING[group] || "Subscriptions", plans };
     let service;
     if (editingServiceId) {
         service = customServices.find((s) => s.id === editingServiceId);
@@ -485,7 +573,7 @@ serviceForm.addEventListener("submit", (e) => {
         service = { id: `custom-${Date.now()}`, ...fields };
         customServices.push(service);
     }
-    saveCustom();
+    if (!saveCustom()) return;
     serviceDialog.close();
     render();
     openPlan(service);
@@ -504,8 +592,45 @@ $("serviceDelete").addEventListener("click", () => {
 $("search").addEventListener("input", renderCatalog);
 $("priceInfo").textContent = `Prices checked ${PRICES_CHECKED}. Services billed in US dollars are converted at Rs ${USD_TO_MUR} per $1 and rounded up to the next rupee; your bank's rate may differ slightly.`;
 
-// Post any charges that came due since the last visit
-if (syncSubscriptions(data) > 0) {
-    try { saveExpenseData(data); } catch (e) {}
+// Clicking outside a pop-up (on the dimmed background) closes it, like Cancel.
+// Both the press and the release must be outside, so dragging out of a text box doesn't close it.
+for (const dialog of [planDialog, serviceDialog]) {
+    const isOutside = (e) => {
+        if (e.target !== dialog) return false; // clicked something inside the window
+        const r = dialog.getBoundingClientRect();
+        return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+    };
+    let pressedOutside = false;
+    dialog.addEventListener("pointerdown", (e) => { pressedOutside = isOutside(e); });
+    dialog.addEventListener("click", (e) => {
+        if (pressedOutside && isOutside(e)) dialog.close();
+        pressedOutside = false;
+    });
 }
+
+// Post any charges that came due since the last visit
+function postDueCharges() {
+    if (syncSubscriptions(data) > 0) {
+        try { saveExpenseData(data); } catch (e) {}
+    }
+}
+
+// This page keeps its own copy of your data. If another tab or page changed it (or you
+// came back with the browser's Back button), reload it first: saving the old copy
+// would wipe out what the other page added.
+function reloadFromStorage() {
+    if (planDialog.open) planDialog.close();
+    if (serviceDialog.open) serviceDialog.close();
+    hideToast();
+    data = loadExpenseData();
+    customServices = loadCustomServices();
+    postDueCharges();
+    render();
+}
+window.addEventListener("storage", (e) => {
+    if (e.key === null || e.key === EXPENSES_KEY || e.key === CUSTOM_SERVICES_KEY) reloadFromStorage();
+});
+window.addEventListener("pageshow", (e) => { if (e.persisted) reloadFromStorage(); });
+
+postDueCharges();
 render();
