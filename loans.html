@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Loans</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: "class" };
+    (function () {
+      let saved = null;
+      try { saved = localStorage.getItem("theme"); } catch (e) {}
+      const dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.classList.toggle("dark", dark);
+    })();
+  </script>
+</head>
+<body class="bg-slate-100 text-slate-900 dark:bg-black dark:text-neutral-100">
+  <main class="mx-auto min-h-screen max-w-3xl border-x border-slate-200 bg-white px-4 pb-16 pt-4 dark:border-neutral-800 dark:bg-black">
+
+    <header class="flex items-center gap-2">
+      <a href="index.html" aria-label="Back to overview" class="rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-neutral-900">
+        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </a>
+      <h1 class="text-2xl font-semibold">Loans</h1>
+    </header>
+
+    <!-- Summary of saved loans -->
+    <section id="summary" class="mt-6 hidden rounded-2xl bg-slate-50 p-4 dark:bg-black">
+      <p class="font-medium text-slate-600 dark:text-neutral-300">Total owed</p>
+      <p id="totalOwed" class="mt-3 text-3xl font-bold"></p>
+      <div class="mt-4 flex flex-wrap justify-between gap-2 text-sm">
+        <span>Repayments: <span id="monthlyTotal" class="font-semibold"></span> a month</span>
+        <span id="nextDue" class="text-slate-500 dark:text-neutral-400"></span>
+      </div>
+    </section>
+
+    <!-- My loans -->
+    <section class="mt-6">
+      <h2 class="font-semibold">My loans</h2>
+      <p id="noLoans" class="mt-2 text-sm text-slate-500 dark:text-neutral-400">No loans saved. Use the calculator below, then save it to track repayments.</p>
+      <ul id="loanList" class="mt-3 space-y-3"></ul>
+    </section>
+
+    <!-- Calculator -->
+    <section id="calculator" class="mt-8 rounded-2xl border border-slate-200 p-4 dark:border-neutral-800">
+      <div class="flex items-center justify-between gap-2">
+        <h2 id="calcTitle" class="font-semibold">Loan calculator</h2>
+        <button id="cancelEdit" type="button" class="hidden text-sm text-slate-500 underline dark:text-neutral-400">Cancel editing</button>
+      </div>
+
+      <form id="calcForm" class="mt-3 grid grid-cols-2 gap-3" novalidate>
+        <label class="col-span-2 block text-sm sm:col-span-1">
+          <span class="text-slate-600 dark:text-neutral-300">Loan type</span>
+          <select name="type" class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900"></select>
+        </label>
+        <label class="col-span-2 block text-sm sm:col-span-1">
+          <span class="text-slate-600 dark:text-neutral-300">Name (to save it)</span>
+          <input name="name" placeholder="e.g. MCB car loan" class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+        </label>
+        <label class="block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">Amount borrowed (Rs)</span>
+          <input name="amount" type="number" step="0.01" min="0" placeholder="e.g. 800000" class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+        </label>
+        <label class="block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">Interest rate (% a year)</span>
+          <input name="rate" type="number" step="0.01" min="0" placeholder="Your bank's rate" class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+        </label>
+        <label class="col-span-2 block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">How interest is charged</span>
+          <select name="method" class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900"></select>
+        </label>
+        <div class="block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">Term</span>
+          <div class="mt-1 flex gap-2">
+            <label class="flex flex-1 items-center gap-1"><input name="years" type="number" min="0" step="1" class="w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900"><span class="text-xs">yrs</span></label>
+            <label class="flex flex-1 items-center gap-1"><input name="months" type="number" min="0" max="11" step="1" class="w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900"><span class="text-xs">mths</span></label>
+          </div>
+        </div>
+        <label class="block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">Repayments</span>
+          <select name="frequency" class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900"></select>
+        </label>
+        <label class="block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">First repayment date</span>
+          <input name="firstPaymentDate" type="date" class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+        </label>
+        <label class="block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">Instalments already paid</span>
+          <input name="alreadyPaid" type="number" min="0" step="1" value="0" class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+        </label>
+        <label class="col-span-2 block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">What if I pay extra each instalment? (Rs, optional)</span>
+          <input name="extra" type="number" step="0.01" min="0" placeholder="0" class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+        </label>
+      </form>
+
+      <!-- Results -->
+      <div id="results" class="mt-5 hidden">
+        <div class="rounded-xl bg-slate-50 p-4 dark:bg-neutral-900">
+          <p id="pmtLabel" class="text-sm text-slate-600 dark:text-neutral-300"></p>
+          <p id="pmt" class="mt-1 text-3xl font-bold"></p>
+          <p id="pmtNote" class="mt-1 text-xs text-slate-500 dark:text-neutral-400"></p>
+        </div>
+        <dl class="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+          <div><dt class="text-slate-500 dark:text-neutral-400">Total interest</dt><dd id="rInterest" class="font-semibold"></dd></div>
+          <div><dt class="text-slate-500 dark:text-neutral-400">Total repaid</dt><dd id="rTotal" class="font-semibold"></dd></div>
+          <div><dt class="text-slate-500 dark:text-neutral-400">Repayments</dt><dd id="rCount" class="font-semibold"></dd></div>
+          <div><dt class="text-slate-500 dark:text-neutral-400">Paid off</dt><dd id="rPayoff" class="font-semibold"></dd></div>
+        </dl>
+        <div class="mt-4">
+          <div class="flex h-3 overflow-hidden rounded-full">
+            <div id="barPrincipal" class="bg-teal-600"></div>
+            <div id="barInterest" class="bg-amber-500"></div>
+          </div>
+          <div class="mt-1 flex justify-between text-xs text-slate-500 dark:text-neutral-400">
+            <span id="legendPrincipal"></span><span id="legendInterest"></span>
+          </div>
+        </div>
+        <p id="effective" class="mt-3 text-sm text-amber-700 dark:text-amber-400"></p>
+        <p id="whatIf" class="mt-2 text-sm text-teal-700 dark:text-teal-400"></p>
+
+        <details class="mt-4">
+          <summary class="cursor-pointer text-sm font-medium">Repayment schedule</summary>
+          <div class="mt-2 flex gap-1 rounded-lg bg-slate-100 p-1 text-xs dark:bg-neutral-900">
+            <button id="viewYearly" type="button" class="flex-1 rounded-md p-1.5">By year</button>
+            <button id="viewAll" type="button" class="flex-1 rounded-md p-1.5">Every repayment</button>
+          </div>
+          <div class="mt-2 max-h-96 overflow-auto">
+            <table class="w-full text-right text-xs tabular-nums">
+              <thead id="schedHead" class="sticky top-0 bg-white text-slate-500 dark:bg-black dark:text-neutral-400"></thead>
+              <tbody id="schedBody" class="divide-y divide-slate-200 dark:divide-neutral-800"></tbody>
+            </table>
+          </div>
+        </details>
+
+        <button id="saveLoan" type="button" class="mt-5 w-full rounded-lg bg-teal-600 p-2 font-medium text-white hover:bg-teal-500">Save to my loans</button>
+        <p id="saveStatus" class="mt-2 text-sm text-teal-700 dark:text-teal-400" role="status"></p>
+      </div>
+      <p id="calcError" class="mt-3 text-sm text-slate-500 dark:text-neutral-400"></p>
+    </section>
+
+    <p class="mt-4 text-xs leading-relaxed text-slate-500 dark:text-neutral-400">
+      Figures are estimates for planning. Banks may round differently or add fees (processing, insurance, early settlement), so check your loan agreement.
+    </p>
+  </main>
+
+  <!-- Extra payment popup -->
+  <dialog id="extraDialog" class="w-[90%] max-w-sm rounded-2xl p-6 backdrop:bg-black/60 dark:border dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100">
+    <form id="extraForm" class="space-y-3">
+      <h2 class="text-lg font-semibold">Extra repayment</h2>
+      <p class="text-sm text-slate-500 dark:text-neutral-400">Goes straight off the balance, so the loan finishes sooner.</p>
+      <input name="amount" type="number" step="0.01" min="0.01" required placeholder="Amount (Rs)"
+        class="w-full rounded-lg border p-2 dark:border-neutral-700 dark:bg-neutral-900">
+      <input name="date" type="date" required class="w-full rounded-lg border p-2 dark:border-neutral-700 dark:bg-neutral-900">
+      <p id="extraError" class="text-sm text-red-500"></p>
+      <div class="flex gap-2">
+        <button type="button" id="extraCancel" class="flex-1 rounded-lg border p-2 dark:border-neutral-700">Cancel</button>
+        <button type="submit" class="flex-1 rounded-lg bg-teal-600 p-2 text-white">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="loans-engine.js"></script>
+  <script src="loans.js"></script>
+</body>
+</html>

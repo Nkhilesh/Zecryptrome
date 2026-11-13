@@ -2,6 +2,7 @@ const CURRENCY = "Rs ";
 // This month's income from the Income page (income-store.js).
 // Until any income is recorded there, a sample figure is shown.
 const incomeData = loadIncome();
+const savingsData = loadSavings(); // savings-store.js
 const INCOME = hasIncomeData(incomeData)
   ? sumCents(incomeForMonth(incomeData, incomeMonthKey())) / 100
   : 32000;
@@ -58,6 +59,10 @@ function render() {
 
   for (const el of document.querySelectorAll("[data-cat]")) {
     el.textContent = money(byCategory[el.dataset.cat] || 0);
+  }
+  // Savings card shows your real savings balance once you've used the Savings page
+  if (hasSavingsData(savingsData)) {
+    document.querySelector('[data-cat="Savings"]').textContent = money(totalSaved(savingsData) / 100);
   }
 
   // Spending breakdown, largest first
