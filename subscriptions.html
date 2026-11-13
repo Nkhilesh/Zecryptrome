@@ -52,11 +52,6 @@
       <p id="noResults" class="mt-3 hidden text-sm text-slate-500 dark:text-neutral-400">No match. Use “+ Add new subscription” to add it yourself.</p>
       <p id="priceInfo" class="mt-4 text-xs text-slate-500 dark:text-neutral-400"></p>
     </section>
-
-    <button id="add-btn" aria-label="Add new subscription"
-      class="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-teal-600 text-3xl text-white shadow-lg hover:bg-teal-500">
-      +
-    </button>
   </main>
 
   <!-- Choose a plan -->
@@ -115,12 +110,13 @@
       </label>
       <input id="serviceGroupOther" aria-label="Your own category" placeholder="Type the category (e.g. News, Insurance, Education)"
         class="hidden w-full rounded-lg border p-2 dark:border-neutral-700 dark:bg-neutral-900">
-      <div class="flex items-center gap-3">
-        <label class="text-sm text-slate-600 dark:text-neutral-300">Logo colour
-          <input name="color" type="color" value="#0d9488" class="ml-2 h-8 w-10 cursor-pointer rounded border align-middle dark:border-neutral-700">
-        </label>
-        <div id="servicePreview"></div>
-      </div>
+      <fieldset>
+        <legend class="text-sm text-slate-600 dark:text-neutral-300">Logo colour</legend>
+        <div class="mt-2.5 flex items-center gap-3">
+          <div id="colorSwatches" class="flex flex-wrap gap-2"></div>
+          <div id="servicePreview"></div>
+        </div>
+      </fieldset>
       <div>
         <p class="text-sm text-slate-600 dark:text-neutral-300">Plans</p>
         <div id="planRows" class="mt-2 space-y-2"></div>

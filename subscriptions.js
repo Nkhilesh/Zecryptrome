@@ -472,9 +472,39 @@ function cleanDomain(value) {
     return String(value).trim().toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").split(/[/?#\s]/)[0];
 }
 
+// The logo colours you can pick for your own services
+const LOGO_COLORS = [
+    ["#0d9488", "Teal"], ["#2563eb", "Blue"], ["#4f46e5", "Indigo"], ["#9333ea", "Purple"], ["#db2777", "Pink"],
+    ["#dc2626", "Red"], ["#ea580c", "Orange"], ["#ca8a04", "Yellow"], ["#16a34a", "Green"], ["#475569", "Grey"],
+];
+const DEFAULT_COLOR = LOGO_COLORS[0][0];
+
+function fillColorSwatches(current) {
+    const box = $("colorSwatches");
+    box.innerHTML = "";
+    // A colour saved before this list existed falls back to the default
+    const chosen = LOGO_COLORS.some(([hex]) => hex === current) ? current : DEFAULT_COLOR;
+    for (const [hex, label] of LOGO_COLORS) {
+        const wrap = document.createElement("label");
+        wrap.title = label;
+        wrap.className = "cursor-pointer";
+        wrap.innerHTML = `<input type="radio" name="color" class="peer sr-only"><span class="block h-6 w-6 rounded-full ring-offset-2 peer-checked:ring-2 peer-checked:ring-slate-900 peer-focus-visible:ring-2 peer-focus-visible:ring-teal-500 dark:ring-offset-neutral-950 dark:peer-checked:ring-white"></span>`;
+        const input = wrap.querySelector("input");
+        input.value = hex;
+        input.checked = hex === chosen;
+        input.setAttribute("aria-label", label);
+        input.addEventListener("change", updateServicePreview);
+        wrap.querySelector("span").style.background = hex;
+        box.appendChild(wrap);
+    }
+}
+
 function updateServicePreview() {
     const f = serviceForm.elements;
-    const logo = serviceLogo({ name: f.name.value || "?", domain: cleanDomain(f.domain.value), color: f.color.value });
+    const name = f.name.value.trim(), domain = cleanDomain(f.domain.value);
+    const logo = name || domain
+        ? serviceLogo({ name: name || domain, domain, color: f.color.value || DEFAULT_COLOR })
+        : document.createElement("div");
     logo.id = "servicePreview";
     $("servicePreview").replaceWith(logo);
 }
@@ -511,7 +541,7 @@ function openService(service = null) {
     const f = serviceForm.elements;
     f.name.value = service?.name || "";
     f.domain.value = service?.domain || "";
-    f.color.value = service?.color || "#0d9488";
+    fillColorSwatches(service?.color);
     fillGroupSelect(service?.group);
     $("planRows").innerHTML = "";
     (service?.plans || [null]).forEach(addPlanRow);
@@ -523,11 +553,10 @@ function openService(service = null) {
 }
 
 $("newService").addEventListener("click", () => openService());
-$("add-btn").addEventListener("click", () => openService());
 $("addPlanRow").addEventListener("click", () => addPlanRow());
 $("serviceCancel").addEventListener("click", () => serviceDialog.close());
 let previewTimer = null;
-for (const name of ["name", "domain", "color"]) {
+for (const name of ["name", "domain"]) {
     serviceForm.elements[name].addEventListener("input", () => {
         clearTimeout(previewTimer);
         previewTimer = setTimeout(updateServicePreview, 300);
@@ -564,7 +593,7 @@ serviceForm.addEventListener("submit", (e) => {
         return;
     }
 
-    const fields = { name, domain: cleanDomain(f.domain.value), color: f.color.value, group, category: GROUP_SPENDING[group] || "Subscriptions", plans };
+    const fields = { name, domain: cleanDomain(f.domain.value), color: f.color.value || DEFAULT_COLOR, group, category: GROUP_SPENDING[group] || "Subscriptions", plans };
     let service;
     if (editingServiceId) {
         service = customServices.find((s) => s.id === editingServiceId);
