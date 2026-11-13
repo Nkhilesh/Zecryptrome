@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Income</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: "class" };
+    (function () {
+      let saved = null;
+      try { saved = localStorage.getItem("theme"); } catch (e) {}
+      const dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.classList.toggle("dark", dark);
+    })();
+  </script>
+</head>
+<body class="bg-slate-100 text-slate-900 dark:bg-black dark:text-neutral-100">
+  <main class="mx-auto min-h-screen max-w-3xl border-x border-slate-200 bg-white px-4 pb-28 pt-4 dark:border-neutral-800 dark:bg-black">
+
+    <header class="flex items-center gap-2">
+      <a href="index.html" aria-label="Back to overview" class="rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-neutral-900">
+        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </a>
+      <h1 class="text-2xl font-semibold">Income</h1>
+    </header>
+
+    <!-- Month picker -->
+    <div class="mt-6 flex items-center justify-between">
+      <button id="prevMonth" type="button" aria-label="Previous month" class="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-neutral-900">
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <p id="monthLabel" class="font-semibold"></p>
+      <button id="nextMonth" type="button" aria-label="Next month" class="rounded-lg p-2 hover:bg-slate-100 dark:hover:bg-neutral-900">
+        <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+    </div>
+
+    <!-- Summary -->
+    <section class="mt-4 grid grid-cols-2 gap-3">
+      <div class="rounded-2xl border border-slate-200 p-4 dark:border-neutral-800">
+        <p class="text-sm text-slate-600 dark:text-neutral-300">Total income</p>
+        <p id="totalIncome" class="mt-2 text-2xl font-bold"></p>
+        <p id="incomeCompare" class="mt-1 text-xs text-slate-500 dark:text-neutral-400"></p>
+      </div>
+      <div class="rounded-2xl border border-slate-200 p-4 dark:border-neutral-800">
+        <p class="text-sm text-slate-600 dark:text-neutral-300">Left after expenses</p>
+        <p id="remaining" class="mt-2 text-2xl font-bold"></p>
+        <p id="expensesNote" class="mt-1 text-xs text-slate-500 dark:text-neutral-400"></p>
+      </div>
+    </section>
+
+    <!-- By type -->
+    <section class="mt-6">
+      <h2 class="font-semibold">By type</h2>
+      <div id="byType" class="mt-3 space-y-4"></div>
+    </section>
+
+    <!-- Entries -->
+    <section class="mt-8">
+      <h2 class="font-semibold">This month's income</h2>
+      <p id="empty" class="mt-2 text-sm text-slate-500 dark:text-neutral-400"></p>
+      <ul id="entryList" class="mt-3 space-y-3"></ul>
+    </section>
+
+    <!-- History -->
+    <section class="mt-8">
+      <h2 class="font-semibold">Last 6 months</h2>
+      <div class="mt-2 flex gap-4 text-xs text-slate-500 dark:text-neutral-400">
+        <span class="flex items-center gap-1.5"><span class="h-2 w-3 rounded-full bg-teal-600"></span>Income</span>
+        <span class="flex items-center gap-1.5"><span class="h-2 w-3 rounded-full bg-slate-400 dark:bg-neutral-500"></span>Recorded expenses</span>
+      </div>
+      <div id="history" class="mt-3 space-y-3"></div>
+    </section>
+
+    <button id="add-btn" aria-label="Add income"
+      class="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-teal-600 text-3xl text-white shadow-lg hover:bg-teal-500">
+      +
+    </button>
+  </main>
+
+  <!-- Add income popup -->
+  <dialog id="add-dialog" class="w-[90%] max-w-sm rounded-2xl p-6 backdrop:bg-black/60 dark:border dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-100">
+    <form id="add-form" class="space-y-3">
+      <h2 class="text-lg font-semibold">Add income</h2>
+      <select name="type" class="w-full rounded-lg border p-2 dark:border-neutral-700 dark:bg-neutral-900"></select>
+      <input name="source" placeholder="Employer or client" required
+        class="w-full rounded-lg border p-2 dark:border-neutral-700 dark:bg-neutral-900">
+      <input name="amount" type="number" step="0.01" min="0.01" placeholder="Amount (Rs)" required
+        class="w-full rounded-lg border p-2 dark:border-neutral-700 dark:bg-neutral-900">
+      <label class="block text-sm">
+        <span class="text-slate-600 dark:text-neutral-300">Date received</span>
+        <input name="date" type="date" required
+          class="mt-1 w-full rounded-lg border p-2 dark:border-neutral-700 dark:bg-neutral-900">
+      </label>
+      <label class="flex items-start gap-2 text-sm">
+        <input name="repeat" type="checkbox" class="mt-0.5 h-4 w-4 accent-teal-600">
+        <span>Repeats every month<span class="block text-xs text-slate-500 dark:text-neutral-400">On the same day each month, from this date on</span></span>
+      </label>
+      <p id="formError" class="text-sm text-red-500"></p>
+      <div class="flex gap-2">
+        <button type="button" id="cancel-btn" class="flex-1 rounded-lg border p-2 dark:border-neutral-700">Cancel</button>
+        <button type="submit" class="flex-1 rounded-lg bg-teal-600 p-2 text-white">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="income-store.js"></script>
+  <script src="income.js"></script>
+</body>
+</html>

@@ -1,5 +1,10 @@
 const CURRENCY = "Rs ";
-const INCOME = 32000;
+// This month's income from the Income page (income-store.js).
+// Until any income is recorded there, a sample figure is shown.
+const incomeData = loadIncome();
+const INCOME = hasIncomeData(incomeData)
+  ? sumCents(incomeForMonth(incomeData, incomeMonthKey())) / 100
+  : 32000;
 
 // Savings is money set aside, so it isn't counted as "spent".
 const NOT_SPENDING = ["Savings"];
