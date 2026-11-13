@@ -15,17 +15,40 @@ const CATEGORY_STYLE = {
   Groceries: { label: "Groceries", color: "bg-teal-600" },
   Bills: { label: "Bills & utilities", color: "bg-slate-500" },
   Fuel: { label: "Fuel", color: "bg-amber-500" },
+  "Food & drinks": { label: "Food & drinks", color: "bg-orange-500" },
+  Transport: { label: "Transport", color: "bg-sky-500" },
+  Subscriptions: { label: "Subscriptions", color: "bg-pink-500" },
+  Shopping: { label: "Shopping", color: "bg-indigo-500" },
+  Entertainment: { label: "Entertainment", color: "bg-fuchsia-500" },
+  Health: { label: "Health", color: "bg-emerald-500" },
   Other: { label: "Other", color: "bg-violet-500" },
 };
 
-// Hardcoded for now
-let expenses = [
+// Expenses come from the Expenses page (expenses-store.js), including subscription
+// charges and scanned receipts/bills. Until you record any, sample data is shown.
+const expenseData = loadExpenseData();
+if (syncSubscriptions(expenseData) > 0) {
+  try { saveExpenseData(expenseData); } catch (e) {}
+}
+const SAMPLE_EXPENSES = [
   { id: 1, description: "Supermarket", amount: 4150, category: "Groceries" },
   { id: 2, description: "Electricity & water", amount: 3700, category: "Bills" },
   { id: 3, description: "Petrol", amount: 3200, category: "Fuel" },
   { id: 4, description: "Dinner out", amount: 2500, category: "Other" },
   { id: 5, description: "Monthly savings", amount: 5000, category: "Savings" },
 ];
+let expenses = [];
+
+// This month's expenses in the shape the dashboard uses (amount in rupees)
+function loadDashboardExpenses() {
+  if (!hasExpenseData(expenseData) && !scannedExpenses().length) return SAMPLE_EXPENSES;
+  const mk = expMonthKey();
+  return allExpenses(expenseData)
+    .filter((e) => e.date.startsWith(mk))
+    .sort((a, b) => a.date.localeCompare(b.date) || String(a.id).localeCompare(String(b.id)))
+    .map((e) => ({ id: e.id, description: e.description, amount: e.amountCents / 100, category: e.category }));
+}
+expenses = loadDashboardExpenses();
 
 const list = document.getElementById("expense-list");
 const breakdown = document.getElementById("breakdown");
@@ -85,9 +108,9 @@ function render() {
     breakdown.appendChild(row);
   }
 
-  // Recent expenses
+  // Recent expenses (latest 10; the Expenses page has the full history)
   list.innerHTML = "";
-  for (const e of [...expenses].reverse()) {
+  for (const e of [...expenses].reverse().slice(0, 10)) {
     const li = document.createElement("li");
     li.className =
       "flex items-center justify-between rounded-2xl border border-slate-200 p-4 dark:border-neutral-800";
@@ -109,18 +132,43 @@ document.getElementById("theme-btn").addEventListener("click", () => {
   try { localStorage.setItem("theme", dark ? "dark" : "light"); } catch (e) {}
 });
 
-document.getElementById("add-btn").addEventListener("click", () => dialog.showModal());
+// Category list and auto-categorise from the description (expenses-store.js)
+for (const c of EXPENSE_CATEGORIES) form.elements.category.add(new Option(c, c));
+form.elements.description.addEventListener("input", (e) => {
+  if (!form.elements.category.dataset.touched) form.elements.category.value = autoCategory(e.target.value);
+});
+form.elements.category.addEventListener("change", (e) => { e.target.dataset.touched = "1"; });
+
+document.getElementById("add-btn").addEventListener("click", () => {
+  form.reset();
+  form.elements.category.value = "Other";
+  form.elements.category.dataset.touched = "";
+  dialog.showModal();
+});
 document.getElementById("cancel-btn").addEventListener("click", () => dialog.close());
 
 form.addEventListener("submit", (event) => {
   event.preventDefault();
   const data = new FormData(form);
-  expenses.push({
-    id: Date.now(),
-    description: data.get("description"),
-    amount: parseFloat(data.get("amount")),
+  // Parse the amount as text into cents (no floating-point error)
+  const m = /^\s*(\d+)(?:[.,](\d{0,2}))?\d*\s*$/.exec(String(data.get("amount")));
+  if (!m) return;
+  const amountCents = parseInt(m[1], 10) * 100 + parseInt(((m[2] || "") + "00").slice(0, 2), 10);
+  if (!(amountCents > 0)) return;
+  expenseData.expenses.push({
+    id: newExpenseId(),
+    description: String(data.get("description")).trim(),
+    amountCents,
     category: data.get("category"),
+    date: expIsoDate(),
+    note: "",
   });
+  try {
+    saveExpenseData(expenseData);
+  } catch (e) {
+    alert("Couldn't save: this browser's storage is full or blocked.");
+  }
+  expenses = loadDashboardExpenses();
   form.reset();
   dialog.close();
   render();
