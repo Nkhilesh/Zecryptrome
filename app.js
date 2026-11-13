@@ -58,6 +58,80 @@ const form = document.getElementById("add-form");
 const money = (n) =>
   CURRENCY + n.toLocaleString("en-US", { maximumFractionDigits: 2 });
 
+// Homepage card preferences are saved independently of expense data.
+const CARD_PREFERENCES_KEY = "dashboard.categories.v1";
+const DEFAULT_CARD_CATEGORIES = ["Fuel", "Groceries", "Bills", "Savings"];
+const CARD_CATEGORIES = [...EXPENSE_CATEGORIES, "Savings"];
+function loadCardCategories() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(CARD_PREFERENCES_KEY));
+    if (Array.isArray(saved)) return [...new Set(saved.filter((c) => CARD_CATEGORIES.includes(c)))];
+  } catch (e) {}
+  return [...DEFAULT_CARD_CATEGORIES];
+}
+let cardCategories = loadCardCategories();
+
+function renderCategoryCards(byCategory) {
+  const container = document.getElementById("category-cards");
+  container.replaceChildren();
+  if (!cardCategories.length) {
+    const note = document.createElement("p");
+    note.className = "col-span-2 py-4 text-sm text-slate-500 dark:text-neutral-400";
+    note.textContent = "No categories selected. Use Customize to add cards.";
+    container.appendChild(note);
+  }
+  for (const category of cardCategories) {
+    const card = document.createElement("div");
+    card.className = "rounded-2xl border border-slate-200 p-4 dark:border-neutral-800";
+    const style = CATEGORY_STYLE[category] || { label: category, color: "bg-teal-600" };
+    card.innerHTML = `<span aria-hidden="true" class="block h-2 w-8 rounded-full ${style.color}"></span><p class="label mt-3 text-sm text-slate-600 dark:text-neutral-300"></p><p class="amount mt-2 text-xl font-bold"></p><p class="period mt-1 text-xs text-slate-500 dark:text-neutral-400"></p>`;
+    card.querySelector(".label").textContent = style.label;
+    const isSavings = category === "Savings";
+    const amount = isSavings && hasSavingsData(savingsData) ? totalSaved(savingsData) / 100 : byCategory[category] || 0;
+    card.querySelector(".amount").textContent = money(amount);
+    card.querySelector(".period").textContent = isSavings ? "Saved balance" : "This month";
+    container.appendChild(card);
+  }
+}
+
+function saveCardCategories() {
+  let message = "Preferences saved on this browser.";
+  try { localStorage.setItem(CARD_PREFERENCES_KEY, JSON.stringify(cardCategories)); }
+  catch (e) { message = "Updated for now. Browser storage is unavailable, so preferences could not be saved."; }
+  document.getElementById("card-save-status").textContent = message;
+  render();
+}
+
+function setupCardOptions() {
+  const options = document.getElementById("card-options");
+  const toggle = document.getElementById("customize-cards");
+  toggle.addEventListener("click", () => {
+    options.hidden = !options.hidden;
+    toggle.setAttribute("aria-expanded", String(!options.hidden));
+  });
+  const checkboxes = document.getElementById("card-checkboxes");
+  for (const category of CARD_CATEGORIES) {
+    const label = document.createElement("label");
+    label.className = "flex cursor-pointer items-center gap-2 text-sm";
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.value = category;
+    input.checked = cardCategories.includes(category);
+    input.className = "h-4 w-4 accent-teal-600";
+    input.addEventListener("change", () => {
+      cardCategories = input.checked ? [...cardCategories, category] : cardCategories.filter((c) => c !== category);
+      saveCardCategories();
+    });
+    label.append(input, document.createTextNode(CATEGORY_STYLE[category]?.label || category));
+    checkboxes.appendChild(label);
+  }
+  document.getElementById("reset-cards").addEventListener("click", () => {
+    cardCategories = [...DEFAULT_CARD_CATEGORIES];
+    for (const input of checkboxes.querySelectorAll("input")) input.checked = cardCategories.includes(input.value);
+    saveCardCategories();
+  });
+}
+
 function renderHeader() {
   const now = new Date();
   const h = now.getHours();
@@ -80,13 +154,7 @@ function render() {
   document.getElementById("income").textContent = money(INCOME);
   document.getElementById("spent").textContent = money(spent);
 
-  for (const el of document.querySelectorAll("[data-cat]")) {
-    el.textContent = money(byCategory[el.dataset.cat] || 0);
-  }
-  // Savings card shows your real savings balance once you've used the Savings page
-  if (hasSavingsData(savingsData)) {
-    document.querySelector('[data-cat="Savings"]').textContent = money(totalSaved(savingsData) / 100);
-  }
+  renderCategoryCards(byCategory);
 
   // Spending breakdown, largest first
   breakdown.innerHTML = "";
@@ -174,5 +242,6 @@ form.addEventListener("submit", (event) => {
   render();
 });
 
+setupCardOptions();
 renderHeader();
 render();
