@@ -25,13 +25,23 @@
         <h1 class="text-2xl font-semibold"><span id="greeting">Hello</span> 👋</h1>
         <p id="period" class="mt-2 text-sm text-slate-500 dark:text-neutral-400"></p>
       </div>
-      <button id="theme-btn" type="button" aria-label="Toggle dark mode"
-        class="relative z-10 rounded-lg p-1.5 text-slate-700 hover:bg-slate-100 dark:text-neutral-200 dark:hover:bg-neutral-900">
-        <!-- moon (shown in light mode) -->
-        <svg class="h-6 w-6 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
-        <!-- sun (shown in dark mode) -->
-        <svg class="hidden h-6 w-6 dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
-      </button>
+      <!-- Settings menu -->
+      <div class="relative z-20">
+        <button id="settings-btn" type="button" aria-label="Settings" aria-haspopup="true" aria-expanded="false" aria-controls="settings-menu"
+          class="rounded-lg p-1.5 text-slate-700 hover:bg-slate-100 dark:text-neutral-200 dark:hover:bg-neutral-900">
+          <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+        <div id="settings-menu" role="dialog" aria-label="Settings"
+          class="absolute right-0 top-full mt-2 hidden w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl dark:border-neutral-800 dark:bg-neutral-950">
+          <p class="text-sm font-semibold">Theme</p>
+          <div id="theme-options" class="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 text-sm dark:bg-neutral-900">
+            <button type="button" data-theme-choice="light" class="rounded-lg px-2 py-1.5">Light</button>
+            <button type="button" data-theme-choice="dark" class="rounded-lg px-2 py-1.5">Dark</button>
+            <button type="button" data-theme-choice="system" class="rounded-lg px-2 py-1.5">System</button>
+          </div>
+
+        </div>
+      </div>
     </header>
 
     <!-- Balance -->
@@ -96,6 +106,11 @@
         <svg class="h-5 w-5 text-teal-600 dark:text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M6 18v-7M10 18v-7M14 18v-7M18 18v-7M12 2l8 5H4z"/></svg>
         <p class="mt-2 text-sm font-medium">Loans</p>
         <p class="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">Calculator &amp; repayments</p>
+      </a>
+      <a href="subscriptions.html" class="block rounded-2xl border border-slate-200 p-4 text-left hover:bg-slate-50 dark:border-neutral-800 dark:hover:bg-neutral-900">
+        <svg class="h-5 w-5 text-teal-600 dark:text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
+        <p class="mt-2 text-sm font-medium">Subscription</p>
+        <p class="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">Plans &amp; renewals</p>
       </a>
     </nav>
 

@@ -197,45 +197,6 @@ function renderLimits() {
     }
 }
 
-function renderSubscriptions() {
-    const ul = $("subList");
-    ul.innerHTML = "";
-    const active = data.subscriptions.filter((s) => s.active);
-    const monthly = active.reduce((s, x) => s + subscriptionMonthly(x), 0);
-    $("subTotal").textContent = data.subscriptions.length
-        ? `${formatMoney(monthly)} a month · ${formatMoney(monthly * 12)} a year`
-        : "Netflix, Spotify, gym… add them once and they're logged every time they renew.";
-
-    const cycleWord = { weekly: "week", monthly: "month", yearly: "year" };
-    for (const s of [...data.subscriptions].sort((a, b) => (b.active - a.active) || a.nextDate.localeCompare(b.nextDate))) {
-        const li = document.createElement("li");
-        li.className = "rounded-2xl border border-slate-200 p-4 dark:border-neutral-800" + (s.active ? "" : " opacity-60");
-        li.innerHTML = `
-            <div class="flex items-start justify-between gap-3">
-              <div><p class="n font-medium"></p><p class="d text-xs text-slate-500 dark:text-neutral-400"></p></div>
-              <span class="a font-semibold"></span>
-            </div>
-            <div class="actions mt-3 flex justify-end gap-2"></div>`;
-        li.querySelector(".n").textContent = s.name;
-        li.querySelector(".d").textContent = s.active
-            ? `${s.category} · next charge ${prettyDate(s.nextDate)}`
-            : `${s.category} · paused`;
-        li.querySelector(".a").textContent = `${formatMoney(s.amountCents)} / ${cycleWord[s.cycle]}`;
-        const actions = li.querySelector(".actions");
-        actions.appendChild(smallButton(s.active ? "Pause" : "Resume", () => {
-            s.active = !s.active;
-            if (s.active) {
-                // Don't back-charge the paused period: jump to the next upcoming date
-                const today = expIsoDate();
-                while (s.nextDate < today) s.nextDate = nextBillingDate(s.nextDate, s.cycle, s.day);
-                syncSubscriptions(data);
-            }
-            save();
-        }));
-        actions.appendChild(smallButton("Edit", () => openSub(s)));
-        ul.appendChild(li);
-    }
-}
 
 // ---------- history ----------
 function periodRange(p) {

@@ -64,7 +64,8 @@ const DEFAULT_CARD_CATEGORIES = ["Fuel", "Groceries", "Bills", "Savings"];
 const CARD_CATEGORIES = [...EXPENSE_CATEGORIES, "Savings"];
 function loadCardCategories() {
   try {
-    const saved = JSON.parse(localStorage.getItem(CARD_PREFERENCES_KEY));
+    // "home.cards.v1" is where the first version of the settings menu saved it
+    const saved = JSON.parse(localStorage.getItem(CARD_PREFERENCES_KEY) ?? localStorage.getItem("home.cards.v1"));
     if (Array.isArray(saved)) return [...new Set(saved.filter((c) => CARD_CATEGORIES.includes(c)))];
   } catch (e) {}
   return [...DEFAULT_CARD_CATEGORIES];
@@ -195,9 +196,63 @@ function render() {
   }
 }
 
-document.getElementById("theme-btn").addEventListener("click", () => {
-  const dark = document.documentElement.classList.toggle("dark");
-  try { localStorage.setItem("theme", dark ? "dark" : "light"); } catch (e) {}
+// ---------- settings menu ----------
+const settingsBtn = document.getElementById("settings-btn");
+const settingsMenu = document.getElementById("settings-menu");
+
+function setMenuOpen(open) {
+  settingsMenu.classList.toggle("hidden", !open);
+  settingsBtn.setAttribute("aria-expanded", String(open));
+  if (open) renderThemeOptions();
+}
+settingsBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  setMenuOpen(settingsMenu.classList.contains("hidden"));
+});
+// Close when clicking outside the menu or pressing Escape
+document.addEventListener("click", (e) => {
+  if (!settingsMenu.contains(e.target) && !settingsBtn.contains(e.target)) setMenuOpen(false);
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !settingsMenu.classList.contains("hidden")) {
+    setMenuOpen(false);
+    settingsBtn.focus();
+  }
+});
+
+// Theme: light, dark, or follow the device. "System" saves nothing, which every page
+// already understands (their start-up script falls back to the device setting).
+function savedTheme() {
+  try { return localStorage.getItem("theme") || "system"; } catch (e) { return "system"; }
+}
+function applyTheme(choice) {
+  const dark = choice === "system" ? matchMedia("(prefers-color-scheme: dark)").matches : choice === "dark";
+  document.documentElement.classList.toggle("dark", dark);
+}
+function renderThemeOptions() {
+  const current = savedTheme();
+  for (const b of document.querySelectorAll("[data-theme-choice]")) {
+    const on = b.dataset.themeChoice === current;
+    b.setAttribute("aria-pressed", String(on));
+    b.className = "rounded-lg px-2 py-1.5 " + (on
+      ? "bg-white font-medium shadow-sm dark:bg-neutral-700"
+      : "text-slate-600 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-100");
+  }
+}
+for (const b of document.querySelectorAll("[data-theme-choice]")) {
+  b.addEventListener("click", () => {
+    const choice = b.dataset.themeChoice;
+    try {
+      if (choice === "system") localStorage.removeItem("theme");
+      else localStorage.setItem("theme", choice);
+    } catch (e) {}
+    applyTheme(choice);
+    renderThemeOptions();
+  });
+}
+// Follow the device's setting live while "System" is chosen
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  if (savedTheme() === "system") applyTheme("system");
 });
 
 // Category list and auto-categorise from the description (expenses-store.js)
