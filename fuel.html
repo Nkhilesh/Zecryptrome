@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fuel &amp; Vehicle</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { darkMode: "class" };
+    (function () {
+      let saved = null;
+      try { saved = localStorage.getItem("theme"); } catch (e) {}
+      const dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.classList.toggle("dark", dark);
+    })();
+  </script>
+</head>
+<body class="bg-slate-100 text-slate-900 dark:bg-black dark:text-neutral-100">
+  <main class="mx-auto min-h-screen max-w-3xl border-x border-slate-200 bg-white px-4 pb-16 pt-4 dark:border-neutral-800 dark:bg-black">
+
+    <header class="flex items-center gap-2">
+      <a href="index.html" aria-label="Back to overview" class="rounded-lg p-1.5 hover:bg-slate-100 dark:hover:bg-neutral-900">
+        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </a>
+      <h1 class="text-2xl font-semibold">Fuel &amp; vehicle</h1>
+    </header>
+
+    <!-- Vehicle -->
+    <section class="mt-6 rounded-2xl border border-slate-200 p-4 dark:border-neutral-800">
+      <h2 class="font-semibold">Your vehicle</h2>
+      <div class="mt-3 grid grid-cols-2 gap-3">
+        <label class="block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">Year</span>
+          <select id="year" class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+            <option value="">Select year</option>
+          </select>
+        </label>
+        <label class="block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">Make</span>
+          <select id="make" class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+            <option value="">Select make</option>
+          </select>
+        </label>
+        <label class="block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">Model</span>
+          <select id="model" class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+            <option value="">Select model</option>
+          </select>
+        </label>
+        <label class="block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">Engine</span>
+          <select id="vehicle" class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+            <option value="">Select vehicle</option>
+          </select>
+        </label>
+      </div>
+      <p id="vehicleInfo" class="mt-3 text-sm text-teal-700 dark:text-teal-400"></p>
+      <div class="mt-3 flex flex-wrap items-center gap-3">
+        <button id="saveCar" type="button" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:border-neutral-700 dark:hover:bg-neutral-900">Save as my car</button>
+        <span id="carStatus" class="text-sm text-slate-500 dark:text-neutral-400" role="status"></span>
+      </div>
+    </section>
+
+    <!-- Calibration -->
+    <section class="mt-4 rounded-2xl border border-slate-200 p-4 dark:border-neutral-800">
+      <h2 class="font-semibold">Calibrate with a real fill-up</h2>
+      <p class="mt-1 text-xs leading-relaxed text-slate-500 dark:text-neutral-400">
+        Fill the tank to full and reset your trip meter. Drive normally, then fill to full again.
+        Enter the litres from that second fill-up and the km on the trip meter.
+      </p>
+      <div class="mt-3 grid grid-cols-2 gap-3">
+        <label class="block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">Litres filled</span>
+          <input id="calLitres" type="number" step="0.01" min="0" placeholder="e.g. 28.4"
+            class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+        </label>
+        <label class="block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">Km driven</span>
+          <input id="calKm" type="number" step="0.1" min="0" placeholder="e.g. 520"
+            class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+        </label>
+      </div>
+      <div class="mt-3 flex flex-wrap items-center gap-3">
+        <button id="calibrate" type="button" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:border-neutral-700 dark:hover:bg-neutral-900">Calibrate</button>
+        <button id="resetCal" type="button" class="hidden text-sm text-slate-500 underline hover:text-slate-700 dark:text-neutral-400 dark:hover:text-neutral-200">Use catalogue value</button>
+      </div>
+      <p id="calStatus" class="mt-3 text-sm text-teal-700 dark:text-teal-400" role="status"></p>
+    </section>
+
+    <!-- Journey -->
+    <section class="mt-4 rounded-2xl border border-slate-200 p-4 dark:border-neutral-800">
+      <h2 class="font-semibold">Journey</h2>
+      <div id="routeChips" class="mt-3 hidden flex-wrap gap-2">
+        <button id="homeToWork" type="button" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100 dark:border-neutral-700 dark:hover:bg-neutral-800">Home → Work</button>
+        <button id="workToHome" type="button" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100 dark:border-neutral-700 dark:hover:bg-neutral-800">Work → Home</button>
+      </div>
+      <div class="mt-3 grid gap-3 sm:grid-cols-2">
+        <input id="origin" type="text" placeholder="Origin (e.g. Port Louis)"
+          class="w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+        <input id="destination" type="text" placeholder="Destination (e.g. Curepipe)"
+          class="w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+      </div>
+
+      <div class="mt-3 grid grid-cols-2 gap-3">
+        <label class="block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">Consumption (L/100 km)</span>
+          <input id="fuelConsumption" type="number" step="0.1" min="0" placeholder="L/100 km"
+            class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+        </label>
+        <label class="block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">Fuel price (Rs per litre)</span>
+          <input id="fuelPrice" type="number" step="0.01" min="0" value="77.70" placeholder="Rs / L"
+            class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+        </label>
+      </div>
+
+      <button id="calculate" type="button"
+        class="mt-4 w-full rounded-lg bg-teal-600 p-2 font-medium text-white hover:bg-teal-500">Calculate</button>
+      <div id="result" class="mt-4 text-sm" role="status"></div>
+    </section>
+
+    <!-- Saved places -->
+    <section class="mt-4 rounded-2xl border border-slate-200 p-4 dark:border-neutral-800">
+      <h2 class="font-semibold">Saved places</h2>
+      <div class="mt-3 grid gap-3 sm:grid-cols-2">
+        <label class="block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">Home</span>
+          <input id="homeAddress" type="text" placeholder="e.g. Rose-Hill"
+            class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+        </label>
+        <label class="block text-sm">
+          <span class="text-slate-600 dark:text-neutral-300">Workplace</span>
+          <input id="workAddress" type="text" placeholder="e.g. Ebène"
+            class="mt-1 w-full rounded-lg border border-slate-300 bg-white p-2 dark:border-neutral-700 dark:bg-neutral-900">
+        </label>
+      </div>
+      <div class="mt-3 flex flex-wrap items-center gap-3">
+        <button id="savePlaces" type="button" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:border-neutral-700 dark:hover:bg-neutral-900">Save places</button>
+        <span id="placesStatus" class="text-sm text-slate-500 dark:text-neutral-400" role="status"></span>
+      </div>
+    </section>
+
+    <p id="disclaimer" class="mt-4 text-xs leading-relaxed text-slate-500 dark:text-neutral-400"></p>
+  </main>
+
+  <!-- Google Maps loader: replace GOOGLE_MAPS_API_KEY with your key -->
+  <script>
+    (g=>{var h,a,k,p="The Google Maps JavaScript API",c="google",l="importLibrary",q="__ib__",m=document,b=window;b=b[c]||(b[c]={});var d=b.maps||(b.maps={}),r=new Set,e=new URLSearchParams,u=()=>h||(h=new Promise(async(f,n)=>{await (a=m.createElement("script"));e.set("libraries",[...r]+"");for(k in g)e.set(k.replace(/[A-Z]/g,t=>"_"+t[0].toLowerCase()),g[k]);e.set("callback",c+".maps."+q);a.src=`https://maps.${c}apis.com/maps/api/js?`+e;d[q]=f;a.onerror=()=>h=n(Error(p+" could not load."));a.nonce=m.querySelector("script[nonce]")?.nonce||"";m.head.append(a)}));d[l]?console.warn(p+" only loads once. Ignoring:",g):d[l]=(f,...n)=>r.add(f)&&u().then(()=>d[l](f,...n))})({
+      key: "GOOGLE_MAPS_API_KEY",
+      v: "weekly",
+    });
+  </script>
+  <script src="script.js"></script>
+</body>
+</html>
