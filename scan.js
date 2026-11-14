@@ -455,6 +455,23 @@ groceryForm.addEventListener("submit", (e) => {
 });
 
 // ---------- bill review ----------
+// Extra details read from the bill (kept with the saved bill and shown under the form)
+let scannedBill = null;
+function billDetailLines(b) {
+    const out = [];
+    if (b.arrearsCents > 0 && b.currentCents > 0) {
+        out.push(`Includes ${formatMoney(b.arrearsCents)} unpaid from earlier bills, plus ${formatMoney(b.currentCents)} for this bill.`);
+    } else if (b.arrearsCents > 0) {
+        out.push(`Includes ${formatMoney(b.arrearsCents)} unpaid from earlier bills.`);
+    }
+    if (b.surchargeCents > 0) {
+        out.push(`A late fee of ${formatMoney(b.surchargeCents)} applies if paid after ${b.dueDate ? prettyDate(b.dueDate) : "the due date"}.`);
+    }
+    if (b.period) out.push(`Billing period: ${prettyDate(b.period.from)} to ${prettyDate(b.period.to)}.`);
+    if (b.billNumber) out.push(`Bill number: ${b.billNumber}`);
+    return out;
+}
+
 function fillBillForm(b) {
     groceryForm.classList.add("hidden");
     billForm.reset();
@@ -465,6 +482,11 @@ function fillBillForm(b) {
     if (b.amountCents != null) f.amount.value = centsToInput(b.amountCents);
     f.billDate.value = b.billDate || "";
     f.dueDate.value = b.dueDate || "";
+    scannedBill = b;
+    const lines = billDetailLines(b);
+    $("billDetails").innerHTML = lines.map((l) => `<span class="block"></span>`).join("");
+    $("billDetails").querySelectorAll("span").forEach((el, i) => { el.textContent = lines[i]; });
+    $("billDetails").classList.toggle("hidden", !lines.length);
     billForm.classList.remove("hidden");
     billForm.scrollIntoView({ behavior: "smooth", block: "start" });
 }
@@ -483,6 +505,11 @@ billForm.addEventListener("submit", (e) => {
         billDate: f.billDate.value || f.dueDate.value,
         dueDate: f.dueDate.value,
         paid: f.paid.checked,
+        // details read from the bill, only if the scan found them
+        ...(scannedBill?.arrearsCents > 0 ? { arrearsCents: scannedBill.arrearsCents } : {}),
+        ...(scannedBill?.currentCents > 0 ? { currentCents: scannedBill.currentCents } : {}),
+        ...(scannedBill?.surchargeCents > 0 ? { surchargeCents: scannedBill.surchargeCents } : {}),
+        ...(scannedBill?.billNumber ? { billNumber: scannedBill.billNumber } : {}),
     }, billForm, `Saved ${f.provider.value.trim()} bill for ${formatMoney(amountCents)}.`);
 });
 
@@ -669,6 +696,13 @@ function renderBills(bills, thisMonth, lastMonth) {
             [b.type, b.account && `Acc ${b.account}`, b.billDate && `Billed ${prettyDate(b.billDate)}`].filter(Boolean).join(" · ");
         li.querySelector(".a").textContent = formatMoney(b.amountCents);
         li.querySelector(".l").textContent = label;
+        const extra = [b.arrearsCents > 0 && `Includes ${formatMoney(b.arrearsCents)} unpaid from earlier`, b.surchargeCents > 0 && `Late fee ${formatMoney(b.surchargeCents)}`].filter(Boolean).join(" · ");
+        if (extra) {
+            const p = document.createElement("p");
+            p.className = "mt-2 text-xs text-slate-500 dark:text-neutral-400";
+            p.textContent = extra;
+            li.firstElementChild.after(p);
+        }
         const actions = li.querySelector(".actions");
         actions.appendChild(smallButton(b.paid ? "Mark unpaid" : "Mark paid", () => updateRecord(b.id, { paid: !b.paid })));
         actions.appendChild(smallButton("Delete", () => {

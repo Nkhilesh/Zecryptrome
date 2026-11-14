@@ -253,7 +253,8 @@
 
     // ---------- utility bill ----------
     const AMOUNT_DUE_RE = /amount\s+(?:due|payable|to\s+pay)|total\s+(?:amount\s+)?(?:due|payable)|montant\s+(?:a|à)\s+payer|net\s+amount|balance\s+due|total\s+due|to\s+pay|total\s+bill/i;
-    const DUE_DATE_RE = /due\s+date|pay(?:able)?\s+(?:before|by|on)|date\s+limite|(?:é|e)ch(?:é|e)ance|last\s+date|due\s+on/i;
+    const DUE_DATE_RE = /due\s+date|pay(?:able)?\s+(?:before|by|on)|date\s+limite|(?:é|e)ch(?:é|e)ance|last\s+date|due\s+on|payment\s+is\s+made\s+after|paid\s+after|pay\s+after|paiement\s+apr(?:è|e)s/i;
+    const BILL_DATE_RE = /bill\s+(?:issued\s+on|date)|date\s+of\s+issue|invoice\s+date|issued\s+on|date\s+(?:de\s+)?facture/i;
     const ACCOUNT_RE = /(?:account|acc\.?|a\/c|customer|client|contract|contrat)\s*(?:no\.?|number|num(?:ber|ero)?|n°|#)?\s*[:.]?\s*([A-Z0-9][A-Z0-9\-\/]{4,})/i;
 
     function valueNear(lines, re, pick) {
@@ -275,8 +276,25 @@
 
         const dueDate = valueNear(lines, DUE_DATE_RE, (l) => datesIn(l)[0] ?? null);
         const allDates = lines.flatMap(datesIn);
-        const billDate = allDates.find((d) => d !== dueDate) || null;
+        const billDate = valueNear(lines, BILL_DATE_RE, (l) => datesIn(l)[0] ?? null) || allDates.find((d) => d !== dueDate) || null;
         const account = ACCOUNT_RE.exec(joined)?.[1] || "";
+
+        // Extra details many Mauritian bills carry (my.t, CEB, CWA): unpaid balance from earlier bills,
+        // this month's charge, the late-payment fee, the billing period and the bill number
+        const money = (re) => valueNear(lines, re, (l) => lastAmount(l)?.cents ?? null);
+        const arrearsCents = money(/\barrears?\b|balance\s+(?:on\s+)?previous\s+bill|previous\s+balance|solde\s+pr(?:é|e)c(?:é|e)dent/i);
+        const currentCents = money(/current\s+bill|this\s+month'?s?\s+(?:bill|charges)|total\s+(?:amount\s+)?inclusive\s+of\s+vat|total\s+(?:incl\.?|including)\s+vat/i);
+        const surchargeCents = (() => {
+            const m = /(?:surcharge|late\s+(?:payment\s+)?(?:fee|charge)|penalty|p(?:é|e)nalit(?:é|e))\D{0,20}?(\d{1,3}(?:,\d{3})*(?:\.\d{2})?|\d+(?:\.\d{2})?)/i.exec(joined);
+            return m ? Math.round(parseFloat(m[1].replace(/,/g, "")) * 100) : null;
+        })();
+        const period = (() => {
+            const m = /period\s*:?\s*(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4})\s*[-–to]+\s*(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4})/i.exec(joined);
+            if (!m) return null;
+            const [from, to] = [datesIn(m[1])[0], datesIn(m[2])[0]];
+            return from && to ? { from, to } : null;
+        })();
+        const billNumber = /bill\s+(?:number|no\.?|#)\s*:?\s*([A-Z0-9][A-Z0-9\-\/]{4,})/i.exec(joined)?.[1] || "";
 
         return {
             type: provider ? provider.type : "Other",
@@ -285,6 +303,11 @@
             amountCents,
             billDate,
             dueDate,
+            arrearsCents,
+            currentCents,
+            surchargeCents,
+            period,
+            billNumber,
         };
     }
 
