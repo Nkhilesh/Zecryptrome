@@ -2,7 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Budget">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-512.png">
+  <link rel="stylesheet" href="mobile.css">
+  <script src="mobile.js" defer></script>
   <title>Scan Receipts</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -27,11 +36,12 @@
       <h1 class="text-2xl font-semibold">Scan</h1>
     </header>
 
-    <!-- Mode -->
-    <div class="mt-6 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 dark:bg-neutral-900" role="group" aria-label="What are you scanning?">
-      <button id="modeGroceries" type="button" class="rounded-lg p-2 text-sm font-medium">Grocery receipt</button>
-      <button id="modeBills" type="button" class="rounded-lg p-2 text-sm font-medium">Bill</button>
+    <!-- Two tabs: what you're scanning (styled by scan.js) -->
+    <div class="mt-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1 dark:bg-neutral-900" role="tablist" aria-label="What are you scanning?">
+      <button id="tabUtility" type="button" role="tab" class="rounded-lg p-2.5 text-sm font-medium">Utility bill</button>
+      <button id="tabGeneral" type="button" role="tab" class="rounded-lg p-2.5 text-sm font-medium">General bill</button>
     </div>
+    <p id="tabHint" class="mt-2 text-sm text-slate-500 dark:text-neutral-400"></p>
 
     <!-- Capture -->
     <section class="mt-4 rounded-2xl border border-slate-200 p-4 dark:border-neutral-800">
@@ -46,15 +56,7 @@
       </label>
 
       <div class="mt-3 flex flex-wrap items-center gap-3">
-        <label class="text-sm text-slate-600 dark:text-neutral-300">
-          Engine
-          <select id="engine" class="ml-1 rounded-lg border border-slate-300 bg-white p-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900">
-            <option value="tesseract">On-device (free, private)</option>
-            <option value="vision">Google Vision (more accurate)</option>
-          </select>
-        </label>
         <div class="ml-auto flex gap-2">
-          <button id="manual" type="button" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:border-neutral-700 dark:hover:bg-neutral-900">Enter manually</button>
           <button id="scan" type="button" disabled class="rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-500 disabled:opacity-50">Scan</button>
         </div>
       </div>
@@ -65,12 +67,13 @@
         </div>
         <p id="progressText" class="mt-1 text-xs text-slate-500 dark:text-neutral-400"></p>
       </div>
+      <p id="scanNote" class="mt-3 text-xs text-slate-500 empty:hidden dark:text-neutral-400" role="status"></p>
       <p id="scanError" class="mt-3 text-sm text-red-500" role="alert"></p>
     </section>
 
     <!-- Review: grocery receipt -->
     <form id="groceryForm" class="mt-4 hidden rounded-2xl border border-slate-200 p-4 dark:border-neutral-800">
-      <h2 class="font-semibold">Check the receipt</h2>
+      <h2 class="font-semibold">Check the bill</h2>
       <p class="mt-1 text-xs text-slate-500 dark:text-neutral-400">Fix anything the scan got wrong before saving.</p>
       <div class="mt-3 grid grid-cols-2 gap-3">
         <label class="block text-sm"><span class="text-slate-600 dark:text-neutral-300">Supermarket</span>
@@ -104,7 +107,7 @@
 
     <!-- Review: bill -->
     <form id="billForm" class="mt-4 hidden rounded-2xl border border-slate-200 p-4 dark:border-neutral-800">
-      <h2 class="font-semibold">Check the bill</h2>
+      <h2 class="font-semibold">Check the utility bill</h2>
       <p class="mt-1 text-xs text-slate-500 dark:text-neutral-400">Fix anything the scan got wrong before saving.</p>
       <div class="mt-3 grid grid-cols-2 gap-3">
         <label class="block text-sm"><span class="text-slate-600 dark:text-neutral-300">Type</span>
@@ -126,10 +129,6 @@
       <button type="submit" class="mt-4 w-full rounded-lg bg-teal-600 p-2 font-medium text-white hover:bg-teal-500">Save bill</button>
     </form>
 
-    <details id="rawWrap" class="mt-3 hidden text-sm">
-      <summary class="cursor-pointer text-slate-500 dark:text-neutral-400">Show scanned text</summary>
-      <pre id="rawText" class="mt-2 max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-xs dark:bg-neutral-900"></pre>
-    </details>
     <p id="saveStatus" class="mt-3 text-sm text-teal-700 dark:text-teal-400" role="status"></p>
 
     <!-- History: groceries -->

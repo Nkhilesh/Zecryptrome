@@ -288,7 +288,28 @@
         };
     }
 
-    const api = { parseReceipt, parseBill, amountsIn, datesIn, categoriseItem, ITEM_CATEGORIES };
+    // ---------- receipt or bill? ----------
+    // Scores the signs of each and picks the stronger. Ties go to "grocery".
+    const BILL_WORDS_RE = /\bbill\b|facture|invoice|\bmeter\b|compteur|\bkwh\b|\bm3\b|m³|consumption|consommation|tariff|tarif|billing\s+period|p[eé]riode|\brent\b|\bloyer\b|subscriber|abonn[eé]/i;
+    const RECEIPT_WORDS_RE = /\bqty\b|qt[eé]|cashier|caissi|\bchange\b|rendu|vat\s+receipt|ticket|\bitems?\b|articles?/i;
+    function detectKind(text) {
+        const lines = splitLines(text);
+        const joined = lines.join("\n");
+        let bill = 0, grocery = 0;
+        if (BILL_PROVIDERS.some((p) => p.re.test(joined))) bill += 3;
+        if (AMOUNT_DUE_RE.test(joined)) bill += 2;
+        if (DUE_DATE_RE.test(joined)) bill += 2;
+        if (ACCOUNT_RE.test(joined)) bill += 1;
+        if (BILL_WORDS_RE.test(joined)) bill += 1;
+        if (STORES.some(([, re]) => re.test(lines.slice(0, 10).join("\n")))) grocery += 3;
+        const pricedLines = lines.filter((l) => TRAILING_PRICE_RE.test(l) && !NON_ITEM_RE.test(l)).length;
+        if (pricedLines >= 3) grocery += 2;
+        if (pricedLines >= 6) grocery += 1;
+        if (RECEIPT_WORDS_RE.test(joined) || PAYMENT_RE.test(joined)) grocery += 1;
+        return bill > grocery ? "bill" : "grocery";
+    }
+
+    const api = { parseReceipt, parseBill, detectKind, amountsIn, datesIn, categoriseItem, ITEM_CATEGORIES };
     if (typeof module !== "undefined" && module.exports) module.exports = api;
     else root.ReceiptParser = api;
 })(typeof window !== "undefined" ? window : globalThis);

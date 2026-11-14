@@ -72,6 +72,8 @@ function render() {
     const mk = incomeMonthKey(viewMonth);
     const prevMk = incomeMonthKey(addMonths(viewMonth, -1));
     $("monthLabel").textContent = monthName(viewMonth);
+    const thisMonth = incomeMonthKey(viewMonth) === incomeMonthKey(new Date());
+    $("addLabel").textContent = thisMonth ? "Add income" : `Add income for ${viewMonth.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}`;
 
     const entries = incomeForMonth(data, mk);
     const total = sumCents(entries);
@@ -132,9 +134,8 @@ function renderEntries(entries, mk) {
     // Recurring entries skipped this month, so they can be restored
     const skipped = data.recurring.filter((r) => recurringActiveIn(r, mk) && (r.skips || []).includes(mk));
 
-    $("empty").textContent = entries.length || skipped.length
-        ? ""
-        : "No income recorded for this month. Tap + to add your salary or other earnings.";
+    $("empty").hidden = Boolean(entries.length || skipped.length);
+    $("emptyTitle").textContent = `No income recorded for ${viewMonth.toLocaleDateString("en-GB", { month: "long" })} yet.`;
 
     for (const e of entries) {
         const li = document.createElement("li");
@@ -247,7 +248,7 @@ function syncTypeHints() {
 }
 form.elements.type.addEventListener("change", syncTypeHints);
 
-$("add-btn").addEventListener("click", () => {
+function openAddIncome() {
     form.reset();
     $("formError").textContent = "";
     syncTypeHints();
@@ -255,7 +256,10 @@ $("add-btn").addEventListener("click", () => {
     const today = new Date();
     form.elements.date.value = incomeMonthKey(today) === incomeMonthKey(viewMonth) ? isoDate(today) : `${incomeMonthKey(viewMonth)}-01`;
     dialog.showModal();
-});
+    form.elements.amount.focus(); // straight to the number keypad
+}
+$("add-btn").addEventListener("click", openAddIncome);
+$("empty").addEventListener("click", openAddIncome);
 $("cancel-btn").addEventListener("click", () => dialog.close());
 
 form.addEventListener("submit", (event) => {

@@ -1,20 +1,22 @@
 // Scan page: grocery receipts and bills.
 //
-// OCR engines:
-//  - "tesseract": Tesseract.js runs in the browser. Free, no key, the photo never leaves the device.
-//  - "vision":    Google Cloud Vision (DOCUMENT_TEXT_DETECTION). Better on crumpled or faded receipts.
-//                 Called through the "hyper-worker" Supabase Edge Function, which keeps the API key in the
-//                 GOOGLE_VISION_API_KEY secret so it never reaches the browser.
+// Reading the photo (no choice for the user):
+//  1. Google Cloud Vision (DOCUMENT_TEXT_DETECTION), the more accurate one. Called through the "hyper-worker"
+//     Supabase Edge Function, which keeps the API key in the GOOGLE_VISION_API_KEY secret.
+//  2. Only if Google Vision returns an error: Tesseract.js, which reads the photo on this device.
 
 const HISTORY_KEY = "scan.history.v1";
 const CATEGORIES = [...ReceiptParser.ITEM_CATEGORIES.map(([name]) => name), "Other"];
 
 const $ = (id) => document.getElementById(id);
 const photo = $("photo"), preview = $("preview"), placeholder = $("placeholder");
-const engineSelect = $("engine"), scanButton = $("scan");
+const scanButton = $("scan");
 const groceryForm = $("groceryForm"), billForm = $("billForm"), itemRows = $("itemRows");
 
-let mode = new URLSearchParams(location.search).get("mode") === "bills" ? "bills" : "groceries";
+// Two tabs: "Utility bill" (mode "bills": CEB, CWA, internet, phone, rent) and
+// "General bill" (mode "groceries": supermarket and shop receipts, restaurants and other everyday bills).
+let mode = new URLSearchParams(location.search).get("mode") === "groceries" ? "groceries" : "bills";
+let lastText = ""; // the last scan's text, so a wrong guess can be switched without scanning again
 let images = null; // { ocr: canvas, vision: dataURL, thumb: dataURL }
 
 // ---------- helpers ----------
@@ -52,27 +54,32 @@ function saveHistory(list) {
     AppStorage.setItem(HISTORY_KEY, JSON.stringify(list)); // throws if storage is full/blocked
 }
 
-// ---------- mode ----------
-function setMode(next) {
+// ---------- tabs ----------
+const TAB_HINTS = {
+    bills: "Electricity (CEB), water (CWA), internet, phone or rent.",
+    groceries: "Supermarket and shop receipts, restaurants and other everyday bills.",
+};
+function fillForm(text) {
+    if (mode === "groceries") fillGroceryForm(ReceiptParser.parseReceipt(text));
+    else fillBillForm(ReceiptParser.parseBill(text));
+}
+function setTab(next) {
     mode = next;
-    const active = "bg-white shadow dark:bg-neutral-800";
-    for (const [btn, m] of [[$("modeGroceries"), "groceries"], [$("modeBills"), "bills"]]) {
-        btn.className = `rounded-lg p-2 text-sm font-medium ${m === mode ? active : "text-slate-500 dark:text-neutral-400"}`;
-        btn.setAttribute("aria-pressed", m === mode);
+    for (const [btn, m] of [[$("tabUtility"), "bills"], [$("tabGeneral"), "groceries"]]) {
+        const on = m === mode;
+        btn.setAttribute("aria-selected", String(on));
+        btn.className = "rounded-lg p-2.5 text-sm font-medium " + (on ? "bg-white shadow dark:bg-neutral-800" : "text-slate-500 dark:text-neutral-400");
     }
-    groceryForm.classList.add("hidden");
-    billForm.classList.add("hidden");
+    $("tabHint").textContent = TAB_HINTS[mode];
     $("groceryHistory").classList.toggle("hidden", mode !== "groceries");
     $("billHistory").classList.toggle("hidden", mode !== "bills");
     $("saveStatus").textContent = "";
     history.replaceState(null, "", `?mode=${mode}`);
-    renderHistory();
+    // Already scanned? Show it in the other tab's form without scanning again
+    if (lastText && (!groceryForm.classList.contains("hidden") || !billForm.classList.contains("hidden"))) fillForm(lastText);
 }
-$("modeGroceries").addEventListener("click", () => setMode("groceries"));
-$("modeBills").addEventListener("click", () => setMode("bills"));
-
-// ---------- engine ----------
-engineSelect.value = "vision"; // default to Google Vision (via the "hyper-worker" Edge Function)
+$("tabUtility").addEventListener("click", () => setTab("bills"));
+$("tabGeneral").addEventListener("click", () => setTab("groceries"));
 
 // ---------- photo ----------
 function loadImage(file) {
@@ -280,16 +287,27 @@ scanButton.addEventListener("click", async () => {
     $("saveStatus").textContent = "";
     setProgress(0, "Starting…");
     try {
-        const text = engineSelect.value === "vision" ? await ocrVision() : await ocrTesseract();
+        $("scanNote").textContent = "";
+        let text;
+        try {
+            text = await ocrVision();
+        } catch (visionError) {
+            console.warn("Google Vision failed, reading on this device instead:", visionError);
+            setProgress(0, "Google Vision unavailable, reading the photo on this device…");
+            try {
+                text = await ocrTesseract();
+            } catch (localError) {
+                throw new Error(`Google Vision failed (${visionError.message}) and reading on this device failed too (${localError.message}).`);
+            }
+            $("scanNote").textContent = `Read on this device because Google Vision wasn't available (${visionError.message}). Check the details carefully.`;
+        }
         setProgress(1, "Done");
-        $("rawText").textContent = text || "(no text found)";
-        $("rawWrap").classList.remove("hidden");
         if (!text.trim()) {
             $("scanError").textContent = "No text found. Retake the photo closer, flatter and in better light.";
             return;
         }
-        if (mode === "groceries") fillGroceryForm(ReceiptParser.parseReceipt(text));
-        else fillBillForm(ReceiptParser.parseBill(text));
+        lastText = text;
+        fillForm(text);
     } catch (e) {
         console.error(e);
         $("scanError").textContent = `Scan failed: ${e.message}`;
@@ -297,12 +315,6 @@ scanButton.addEventListener("click", async () => {
         scanButton.disabled = false;
         setTimeout(() => $("progress").classList.add("hidden"), 800);
     }
-});
-
-$("manual").addEventListener("click", () => {
-    $("rawWrap").classList.add("hidden");
-    if (mode === "groceries") fillGroceryForm({ store: "", date: null, items: [], totalCents: null });
-    else fillBillForm({ type: "Electricity", provider: "", account: "", amountCents: null, billDate: null, dueDate: null });
 });
 
 // ---------- grocery review ----------
@@ -494,7 +506,6 @@ function saveRecord(record, form, message) {
         }
     }
     form.classList.add("hidden");
-    $("rawWrap").classList.add("hidden");
     preview.classList.add("hidden");
     placeholder.classList.remove("hidden");
     photo.value = "";
@@ -528,8 +539,8 @@ function renderHistory() {
     const now = new Date();
     const thisMonth = monthKey(now);
     const lastMonth = monthKey(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-    if (mode === "groceries") renderGroceries(list.filter((r) => r.kind === "grocery"), thisMonth, lastMonth);
-    else renderBills(list.filter((r) => r.kind === "bill"), thisMonth, lastMonth);
+    renderGroceries(list.filter((r) => r.kind === "grocery"), thisMonth, lastMonth);
+    renderBills(list.filter((r) => r.kind === "bill"), thisMonth, lastMonth);
 }
 
 function smallButton(text, onClick, extra = "") {
@@ -667,4 +678,5 @@ function renderBills(bills, thisMonth, lastMonth) {
     }
 }
 
-setMode(mode);
+setTab(mode);
+renderHistory();
