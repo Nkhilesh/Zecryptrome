@@ -129,8 +129,13 @@ function enhanceForOCR(canvas) {
     return canvas;
 }
 
-photo.addEventListener("change", async () => {
-    const file = photo.files[0];
+// "Take a photo" opens the camera, "Upload a photo" opens the photo library or files
+$("takePhoto").addEventListener("click", () => $("photoCamera").click());
+$("uploadPhoto").addEventListener("click", () => photo.click());
+for (const input of [photo, $("photoCamera")]) input.addEventListener("change", () => loadPhoto(input));
+
+async function loadPhoto(input) {
+    const file = input.files[0];
     if (!file) return;
     $("scanError").textContent = "";
     try {
@@ -150,7 +155,8 @@ photo.addEventListener("change", async () => {
         scanButton.disabled = true;
         $("scanError").textContent = "Couldn't read that image. Try a JPG or PNG photo.";
     }
-});
+    input.value = ""; // choosing the same file again still counts as a new choice
+}
 
 // ---------- OCR ----------
 function setProgress(fraction, text) {
@@ -535,7 +541,7 @@ function saveRecord(record, form, message) {
     form.classList.add("hidden");
     preview.classList.add("hidden");
     placeholder.classList.remove("hidden");
-    photo.value = "";
+    photo.value = ""; $("photoCamera").value = "";
     images = null;
     scanButton.disabled = true;
     $("saveStatus").className = "mt-3 text-sm text-teal-700 dark:text-teal-400";

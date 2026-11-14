@@ -45,15 +45,27 @@
 
     <!-- Capture -->
     <section class="mt-4 rounded-2xl border border-slate-200 p-4 dark:border-neutral-800">
-      <label class="flex min-h-[14rem] cursor-pointer flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 text-center hover:bg-slate-50 dark:border-neutral-700 dark:hover:bg-neutral-900">
-        <input id="photo" type="file" accept="image/*" class="sr-only">
+      <!-- Two hidden file inputs: one opens the camera, one opens the photo library / files -->
+      <input id="photoCamera" type="file" accept="image/*" capture="environment" class="sr-only" tabindex="-1">
+      <input id="photo" type="file" accept="image/*" class="sr-only" tabindex="-1">
+      <div class="flex min-h-[12rem] flex-col items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-slate-300 text-center dark:border-neutral-700">
         <img id="preview" alt="Selected photo" class="hidden max-h-96 w-full object-contain">
         <span id="placeholder" class="flex flex-col items-center gap-2 p-6 text-slate-500 dark:text-neutral-400">
           <svg class="h-10 w-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
-          <span class="font-medium">Take a photo or upload</span>
+          <span class="font-medium">Add a photo of your bill</span>
           <span class="text-xs">Lay it flat, fill the frame, good light</span>
         </span>
-      </label>
+      </div>
+      <div class="mt-3 grid grid-cols-2 gap-2">
+        <button id="takePhoto" type="button" class="flex items-center justify-center gap-2 rounded-xl border border-slate-300 p-3 text-sm font-medium hover:bg-slate-50 dark:border-neutral-700 dark:hover:bg-neutral-900">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+          Take a photo
+        </button>
+        <button id="uploadPhoto" type="button" class="flex items-center justify-center gap-2 rounded-xl border border-slate-300 p-3 text-sm font-medium hover:bg-slate-50 dark:border-neutral-700 dark:hover:bg-neutral-900">
+          <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          Upload a photo
+        </button>
+      </div>
 
       <div class="mt-3 flex flex-wrap items-center gap-3">
         <div class="ml-auto flex gap-2">
