@@ -257,7 +257,7 @@ function renderCalibration() {
     const vehicle = getFuelConsumption(vehicleSelect.value);
     resetCalButton.classList.toggle("hidden", !calibrated || !vehicle);
     if (!calibrated) {
-        calStatus.textContent = vehicle ? "Not calibrated yet, so the catalogue value is used." : "";
+        calStatus.textContent = "";
         return;
     }
     let text = `Your real consumption: ${calibrated.toFixed(1)} L/100 km (${(100 / calibrated).toFixed(1)} km/L)`;
