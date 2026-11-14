@@ -2,7 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Budget">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-512.png">
+  <link rel="stylesheet" href="mobile.css">
+  <script src="mobile.js" defer></script>
   <title>Budget Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -23,95 +32,82 @@
     <header class="flex items-start justify-between">
       <div>
         <h1 class="text-2xl font-semibold"><span id="greeting">Hello</span> 👋</h1>
-        <p id="period" class="mt-2 text-sm text-slate-500 dark:text-neutral-400"></p>
+        <p id="period" class="mt-1 text-sm text-slate-500 dark:text-neutral-400"></p>
       </div>
       <!-- Settings menu -->
       <div class="relative z-20">
         <button id="settings-btn" type="button" aria-label="Settings" aria-haspopup="true" aria-expanded="false" aria-controls="settings-menu"
-          class="rounded-lg p-1.5 text-slate-700 hover:bg-slate-100 dark:text-neutral-200 dark:hover:bg-neutral-900">
+          class="-mr-1.5 flex h-11 w-11 items-center justify-center rounded-full text-slate-700 hover:bg-slate-100 dark:text-neutral-200 dark:hover:bg-neutral-900">
           <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
         </button>
         <div id="settings-menu" role="dialog" aria-label="Settings"
-          class="absolute right-0 top-full mt-2 hidden w-64 max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl dark:border-neutral-800 dark:bg-neutral-950">
+          class="absolute right-0 top-full mt-2 hidden w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white p-2 shadow-xl dark:border-neutral-800 dark:bg-neutral-950">
+          <!-- Profile -->
+          <button id="profile-open" type="button" class="flex w-full items-center gap-3 rounded-xl p-2 text-left hover:bg-slate-100 dark:hover:bg-neutral-900">
+            <span id="profile-avatar" aria-hidden="true" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-600 font-semibold text-white"></span>
+            <span class="min-w-0 flex-1">
+              <span id="profile-name" class="block truncate font-medium">Profile</span>
+              <span id="profile-email" class="block truncate text-xs text-slate-500 dark:text-neutral-400"></span>
+            </span>
+            <svg class="h-4 w-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+          <div class="my-1 border-t border-slate-200 dark:border-neutral-800"></div>
+          <button id="account-open" type="button" class="flex w-full items-center justify-between gap-3 rounded-xl px-2 py-2.5 text-left text-sm hover:bg-slate-100 dark:hover:bg-neutral-900"><span>Account settings</span><svg class="h-4 w-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+          <button id="household-open" type="button" class="flex w-full items-center justify-between gap-3 rounded-xl px-2 py-2.5 text-left text-sm hover:bg-slate-100 dark:hover:bg-neutral-900">
+            <span class="min-w-0">Add partner <span class="text-slate-500 dark:text-neutral-400">(joint account)</span>
+              <span id="household-summary" class="block truncate text-xs text-slate-500 dark:text-neutral-400">Share your budget with a partner</span>
+            </span><svg class="h-4 w-4 shrink-0 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+          <div class="my-1 border-t border-slate-200 dark:border-neutral-800"></div>
+          <div class="px-2 py-2">
           <p class="text-sm font-semibold">Theme</p>
           <div id="theme-options" class="mt-2 grid grid-cols-3 gap-1 rounded-xl bg-slate-100 p-1 text-sm dark:bg-neutral-900">
             <button type="button" data-theme-choice="light" class="rounded-lg px-2 py-1.5">Light</button>
             <button type="button" data-theme-choice="dark" class="rounded-lg px-2 py-1.5">Dark</button>
             <button type="button" data-theme-choice="system" class="rounded-lg px-2 py-1.5">System</button>
           </div>
+          </div>
+          <div class="my-1 border-t border-slate-200 dark:border-neutral-800"></div>
+          <button id="logout-btn" type="button" class="flex w-full items-center gap-2 rounded-xl px-2 py-2.5 text-left text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-60 dark:text-red-400 dark:hover:bg-red-950/40">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            Log out
+          </button>
 
         </div>
       </div>
     </header>
 
     <!-- Balance -->
-    <section class="mt-6 rounded-2xl bg-slate-50 p-4 dark:bg-black">
-      <p class="font-medium text-slate-600 dark:text-neutral-300">Available balance</p>
-      <p id="balance" class="mt-3 text-3xl font-bold">Rs 0</p>
-      <div class="mt-4 flex justify-between text-sm">
-        <span class="flex items-center gap-2">
-          <svg class="h-3.5 w-3.5 text-green-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 7 7 17M17 17H7V7"/></svg>
-          Income: <span id="income"></span>
-        </span>
-        <span class="flex items-center gap-2">
-          <svg class="h-3.5 w-3.5 text-red-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h10v10M7 17 17 7"/></svg>
-          Spent: <span id="spent"></span>
-        </span>
+    <section class="mt-5 rounded-3xl bg-gradient-to-br from-teal-700 to-teal-900 p-5 text-white shadow-lg shadow-teal-900/20">
+      <p class="text-sm font-medium text-teal-50">Available balance</p>
+      <p id="balance" class="mt-1 text-4xl font-bold tracking-tight">Rs 0</p>
+      <div class="mt-4 grid grid-cols-2 gap-3">
+        <div class="rounded-2xl bg-white/15 p-3">
+          <p class="flex items-center gap-1.5 text-xs text-teal-50">
+            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 7 7 17M17 17H7V7"/></svg>
+            Income
+          </p>
+          <p id="income" class="mt-1 font-semibold"></p>
+        </div>
+        <div class="rounded-2xl bg-white/15 p-3">
+          <p class="flex items-center gap-1.5 text-xs text-teal-50">
+            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10v10M7 17 17 7"/></svg>
+            Spent
+          </p>
+          <p id="spent" class="mt-1 font-semibold"></p>
+        </div>
       </div>
     </section>
 
-    <!-- Feature buttons (no actions yet) -->
-    <nav class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-      <a href="fuel.html" class="block rounded-2xl border border-slate-200 p-4 text-left hover:bg-slate-50 dark:border-neutral-800 dark:hover:bg-neutral-900">
-        <svg class="h-5 w-5 text-teal-600 dark:text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h12M4 9h10M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/></svg>
-        <p class="mt-2 text-sm font-medium">Fuel &amp; vehicle</p>
-        <p class="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">Journeys, refills, efficiency</p>
-      </a>
-      <!-- Scanner: grocery receipts and bills (CEB, CWA, internet, rent) -->
-      <div class="rounded-2xl border border-slate-200 p-4 dark:border-neutral-800">
-        <svg class="h-5 w-5 text-teal-600 dark:text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></svg>
-        <p class="mt-2 text-sm font-medium">Scan</p>
-        <p class="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">Receipts &amp; bills</p>
-        <div class="mt-3 flex flex-wrap gap-2">
-          <a href="scan.html?mode=groceries" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100 dark:border-neutral-700 dark:hover:bg-neutral-800">Groceries</a>
-          <a href="scan.html?mode=bills" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100 dark:border-neutral-700 dark:hover:bg-neutral-800">Bills</a>
-        </div>
-      </div>
-      <a href="income.html" class="block rounded-2xl border border-slate-200 p-4 text-left hover:bg-slate-50 dark:border-neutral-800 dark:hover:bg-neutral-900">
-        <svg class="h-5 w-5 text-teal-600 dark:text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
-        <p class="mt-2 text-sm font-medium">Income</p>
-        <p class="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">Salary &amp; other earnings</p>
-      </a>
-      <a href="savings.html" class="block rounded-2xl border border-slate-200 p-4 text-left hover:bg-slate-50 dark:border-neutral-800 dark:hover:bg-neutral-900">
-        <svg class="h-5 w-5 text-teal-600 dark:text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-        <p class="mt-2 text-sm font-medium">Savings goals</p>
-        <p class="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">Targets &amp; progress</p>
-      </a>
-      <a href="expenses.html" class="block rounded-2xl border border-slate-200 p-4 text-left hover:bg-slate-50 dark:border-neutral-800 dark:hover:bg-neutral-900">
-        <svg class="h-5 w-5 text-teal-600 dark:text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
-        <p class="mt-2 text-sm font-medium">Expenses</p>
-        <p class="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">Add, search, limits</p>
-      </a>
-      <a href="insights.html" class="block rounded-2xl border border-slate-200 p-4 text-left hover:bg-slate-50 dark:border-neutral-800 dark:hover:bg-neutral-900">
-        <svg class="h-5 w-5 text-teal-600 dark:text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 7 13.5 15.5 8.5 10.5 2 17"/><path d="M16 7h6v6"/></svg>
-        <p class="mt-2 text-sm font-medium">Insights</p>
-        <p class="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">Health score &amp; trends</p>
-      </a>
-      <a href="calendar.html" class="block rounded-2xl border border-slate-200 p-4 text-left hover:bg-slate-50 dark:border-neutral-800 dark:hover:bg-neutral-900">
-        <svg class="h-5 w-5 text-teal-600 dark:text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-        <p class="mt-2 text-sm font-medium">Calendar</p>
-        <p class="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">Bills &amp; due dates</p>
-      </a>
-      <a href="loans.html" class="block rounded-2xl border border-slate-200 p-4 text-left hover:bg-slate-50 dark:border-neutral-800 dark:hover:bg-neutral-900">
-        <svg class="h-5 w-5 text-teal-600 dark:text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 22h18M6 18v-7M10 18v-7M14 18v-7M18 18v-7M12 2l8 5H4z"/></svg>
-        <p class="mt-2 text-sm font-medium">Loans</p>
-        <p class="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">Calculator &amp; repayments</p>
-      </a>
-      <a href="subscriptions.html" class="block rounded-2xl border border-slate-200 p-4 text-left hover:bg-slate-50 dark:border-neutral-800 dark:hover:bg-neutral-900">
-        <svg class="h-5 w-5 text-teal-600 dark:text-teal-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg>
-        <p class="mt-2 text-sm font-medium">Subscription</p>
-        <p class="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">Plans &amp; renewals</p>
-      </a>
+    <!-- Features. Insights and Calendar are in the tab bar at the bottom (mobile.js). -->
+    <nav aria-label="Features" class="m-tiles mt-6">
+      <a class="m-tile" href="expenses.html"><span class="m-tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></span><span>Expenses</span></a>
+      <a class="m-tile" href="income.html"><span class="m-tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="12" x="2" y="6" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg></span><span>Income</span></a>
+      <a class="m-tile" href="subscriptions.html"><span class="m-tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 2l4 4-4 4"/><path d="M3 11v-1a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v1a4 4 0 0 1-4 4H3"/></svg></span><span>Subscription</span></a>
+      <a class="m-tile" href="savings.html"><span class="m-tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span><span>Savings</span></a>
+      <a class="m-tile" href="scan.html"><span class="m-tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 12h10"/></svg></span><span>Scan</span></a>
+      <a class="m-tile" href="fuel.html"><span class="m-tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 22h12M4 9h10M14 22V4a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v18M14 13h2a2 2 0 0 1 2 2v2a2 2 0 0 0 2 2 2 2 0 0 0 2-2V9.83a2 2 0 0 0-.59-1.42L18 5"/></svg></span><span>Fuel</span></a>
+      <a class="m-tile" href="loans.html"><span class="m-tile-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 22h18M6 18v-7M10 18v-7M14 18v-7M18 18v-7M12 2l8 5H4z"/></svg></span><span>Loans</span></a>
     </nav>
 
     <!-- Category cards -->
@@ -142,15 +138,13 @@
 
     <!-- Expense list -->
     <section class="mt-8">
-      <h2 class="font-semibold">Recent expenses</h2>
+      <div class="flex items-center justify-between gap-3">
+        <h2 class="font-semibold">Recent expenses</h2>
+        <button id="add-btn" type="button" class="rounded-full border border-slate-300 px-3 py-1 text-xs font-medium hover:bg-slate-100 dark:border-neutral-700 dark:hover:bg-neutral-800">+ Add expense</button>
+      </div>
       <ul id="expense-list" class="mt-3 space-y-3"></ul>
     </section>
 
-    <!-- Add button -->
-    <button id="add-btn" aria-label="Add expense"
-      class="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-teal-600 text-3xl text-white shadow-lg hover:bg-teal-500">
-      +
-    </button>
   </main>
 
   <!-- Add expense popup -->
@@ -172,6 +166,6 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase-config.js"></script>
   <script src="cloud-store.js"></script>
-  <script src="cloud-bootstrap.js" data-scripts='["income-store.js", "savings-store.js", "expenses-store.js", "app.js"]'></script>
+  <script src="cloud-bootstrap.js" data-scripts='["income-store.js", "savings-store.js", "expenses-store.js", "app.js", "account.js"]'></script>
 </body>
 </html>

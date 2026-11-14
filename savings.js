@@ -279,7 +279,6 @@ function updateGoalPreview() {
 goalForm.addEventListener("input", updateGoalPreview);
 
 $("newGoal").addEventListener("click", () => openGoal());
-$("add-btn").addEventListener("click", () => openGoal());
 $("goalCancel").addEventListener("click", () => goalDialog.close());
 
 goalForm.addEventListener("submit", (e) => {

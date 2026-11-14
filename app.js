@@ -136,8 +136,9 @@ function setupCardOptions() {
 function renderHeader() {
   const now = new Date();
   const h = now.getHours();
+  const first = (window.Account?.user?.user_metadata?.full_name || "").trim().split(/\s+/)[0];
   document.getElementById("greeting").textContent =
-    h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+    (h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening") + (first ? `, ${first}` : "");
   document.getElementById("period").textContent =
     now.toLocaleString("en-US", { month: "long", year: "numeric" }) + " overview";
 }
@@ -182,13 +183,13 @@ function render() {
   for (const e of [...expenses].reverse().slice(0, 10)) {
     const li = document.createElement("li");
     li.className =
-      "flex items-center justify-between rounded-2xl border border-slate-200 p-4 dark:border-neutral-800";
+      "flex items-center justify-between gap-3 rounded-2xl border border-slate-200 p-4 dark:border-neutral-800";
     li.innerHTML = `
-      <div>
-        <p class="desc font-medium"></p>
+      <div class="min-w-0">
+        <p class="desc truncate font-medium"></p>
         <p class="cat text-xs text-slate-500 dark:text-neutral-400"></p>
       </div>
-      <span class="amt font-semibold"></span>`;
+      <span class="amt whitespace-nowrap font-semibold"></span>`;
     li.querySelector(".desc").textContent = e.description;
     li.querySelector(".cat").textContent = e.category;
     li.querySelector(".amt").textContent = money(e.amount);

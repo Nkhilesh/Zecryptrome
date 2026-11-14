@@ -10,10 +10,11 @@ const db = window.supabase.createClient(
 console.log("Supabase client initialized!");
 
 
-async function signUp(email, password) {
+async function signUp(email, password, name = "") {
   const { data, error } = await db.auth.signUp({
     email,
-    password
+    password,
+    options: { data: { full_name: name } } // display name, shown in the greeting and Profile
   });
 
   if (error) {

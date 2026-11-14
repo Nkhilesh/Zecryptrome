@@ -1,0 +1,155 @@
+/* Mobile app shell, shared by every page (loaded with mobile.js).
+   - bottom tab bar
+   - sticky page header
+   - pop-ups become bottom sheets on phones
+   - finger-sized controls, no zoom-on-focus, phone safe areas
+   Pages keep their own Tailwind classes; the !important rules below adjust them for phones. */
+
+:root {
+  --tab-h: 3.75rem;                                  /* height of the bottom tab bar */
+  --safe-b: env(safe-area-inset-bottom, 0px);        /* iPhone home-indicator area */
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  scroll-padding-top: 4rem;                          /* anchors and focus don't hide under the sticky header */
+}
+
+/* Room for the tab bar at the end of every page */
+main { padding-bottom: calc(var(--tab-h) + var(--safe-b) + 2rem) !important; }
+[data-part="gate"] { min-height: 100dvh; }
+
+/* ---------- bottom tab bar ---------- */
+.m-tabbar {
+  position: fixed; inset: auto 0 0 0; z-index: 40;
+  display: flex; justify-content: center;
+  padding-bottom: var(--safe-b);
+  background: #fff;
+  border-top: 1px solid #e2e8f0;
+}
+.dark .m-tabbar { background: #000; border-top-color: #262626; }
+main[hidden] ~ .m-tabbar { display: none; }           /* signed out: no navigation */
+.m-tabbar ul { display: flex; width: 100%; max-width: 48rem; margin: 0; padding: 0; list-style: none; }
+.m-tabbar li { flex: 1 1 0; min-width: 0; }
+.m-tab {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.125rem;
+  width: 100%; height: var(--tab-h);
+  font-size: 0.6875rem; font-weight: 500; line-height: 1;
+  color: #64748b; background: none; border: 0; text-decoration: none; cursor: pointer;
+}
+.dark .m-tab { color: #a3a3a3; }
+.m-tab svg { width: 1.5rem; height: 1.5rem; }
+.m-tab[aria-current="page"] { color: #0f766e; font-weight: 600; }
+.dark .m-tab[aria-current="page"] { color: #2dd4bf; }
+.m-tab:focus-visible { outline: 2px solid #14b8a6; outline-offset: -4px; border-radius: 0.75rem; }
+
+/* Confirmation messages sit above the tab bar */
+#toast { bottom: calc(var(--tab-h) + var(--safe-b) + 1rem) !important; }
+
+/* ---------- feature tiles (home screen) ---------- */
+.m-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 1rem; column-gap: 0.25rem; }
+.m-tile {
+  display: flex; flex-direction: column; align-items: center; gap: 0.375rem;
+  padding: 0.25rem 0; border-radius: 0.75rem;
+  font-size: 0.75rem; font-weight: 500; line-height: 1.15; text-align: center; text-decoration: none; color: inherit;
+}
+.m-tile-icon {
+  display: flex; align-items: center; justify-content: center;
+  width: 3.25rem; height: 3.25rem; border-radius: 1rem;
+  background: #f0fdfa; color: #0f766e;
+}
+.dark .m-tile-icon { background: #171717; color: #2dd4bf; }
+.m-tile-icon svg { width: 1.5rem; height: 1.5rem; }
+.m-tile:active .m-tile-icon { transform: scale(0.94); }
+.m-tile:focus-visible { outline: 2px solid #14b8a6; outline-offset: 2px; }
+
+/* ---------- sticky header on inner pages ---------- */
+.m-header {
+  position: sticky; top: 0; z-index: 30;
+  margin: -1rem -1rem 0; padding: 0.625rem 1rem;
+  background: #fff;
+}
+.dark .m-header { background: #000; }
+.m-header h1 { font-size: 1.25rem !important; line-height: 1.75rem !important; }
+.m-header > a { display: inline-flex; align-items: center; justify-content: center; min-width: 2.75rem; min-height: 2.75rem; margin-left: -0.5rem; }
+
+/* ---------- finger-sized controls ---------- */
+/* 16px text stops iPhones zooming the page when a field is focused */
+:is(main, dialog, [data-part="gate"]) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea) {
+  font-size: 1rem !important;
+  min-height: 2.75rem;
+}
+/* The field you're typing in gets a clear teal edge. The browser's own focus outline is near-black,
+   which vanishes against the dark theme and made the box look as if it disappeared. */
+:is(main, dialog, [data-part="gate"]) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea):focus {
+  outline: none;
+  border-color: #0d9488 !important;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.25) !important;
+}
+.dark :is(main, dialog, [data-part="gate"]) :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]), select, textarea):focus {
+  border-color: #2dd4bf !important;
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.25) !important;
+}
+/* Browser autofill (saved email/password) keeps the field's own colours instead of repainting it */
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
+  -webkit-text-fill-color: currentColor;
+  transition: background-color 600000s 0s, color 600000s 0s;
+}
+/* Small pill buttons get a taller touch area */
+:is(main, dialog) :is(button, a).rounded-full.py-1 { padding-top: 0.5rem; padding-bottom: 0.5rem; font-size: 0.8125rem; }
+/* Main buttons */
+:is(main, dialog, [data-part="gate"]) button.rounded-lg.p-2 { min-height: 2.75rem; }
+:is(main, dialog) :is(button, a, summary, label, select) { touch-action: manipulation; }  /* no double-tap delay */
+
+/* Amounts stay on one line; the text beside them wraps or shortens instead (rows built by each page's script) */
+:is(main, dialog) :is(.a, .amt) { white-space: nowrap; }
+:is(main, dialog) .flex.justify-between > div:first-child { min-width: 0; }
+
+/* Native date pickers, dropdown arrows and scrollbars match the dark theme */
+.dark :is(input, select, textarea, dialog, main) { color-scheme: dark; }
+
+/* ---------- phones: pop-ups slide up from the bottom ---------- */
+@media (max-width: 639px) {
+  main { border-left: 0 !important; border-right: 0 !important; }
+
+  dialog {
+    width: 100% !important; max-width: 100% !important;
+    margin: auto 0 0 0 !important;
+    max-height: 92dvh !important;
+    border-radius: 1.25rem 1.25rem 0 0 !important;
+    border-left: 0 !important; border-right: 0 !important; border-bottom: 0 !important;
+    overscroll-behavior: contain;
+  }
+  dialog:not(.p-0) { padding: 1.25rem 1.25rem calc(1.25rem + var(--safe-b)) !important; }
+  /* Subscriptions plan sheet has its own pinned footer */
+  #planDialog > form > div:last-child { padding-bottom: calc(1.25rem + var(--safe-b)) !important; }
+  /* Cancel / Save stay in reach at the bottom of a long sheet while the fields scroll */
+  dialog:not(.p-0) > form > div:last-child {
+    position: sticky; bottom: calc(-1.25rem - var(--safe-b)); z-index: 1;
+    margin: 0 -1.25rem calc(-1.25rem - var(--safe-b)) !important;
+    padding: 0.75rem 1.25rem calc(1.25rem + var(--safe-b));
+    background: #fff;
+  }
+  .dark dialog:not(.p-0) > form > div:last-child { background: #0a0a0a; }
+  /* Grab handle */
+  dialog:not(.p-0)::before, #planDialog > form::before {
+    content: ""; display: block; flex: none;
+    width: 2.5rem; height: 0.25rem; margin: -0.5rem auto 0.875rem; border-radius: 9999px;
+    background: #cbd5e1;
+  }
+  #planDialog > form::before { margin: 0.75rem auto 0; }
+  .dark dialog:not(.p-0)::before, .dark #planDialog > form::before { background: #404040; }
+  dialog[open] { animation: m-sheet-up 0.22s ease-out; }
+  dialog[open]::backdrop { animation: m-fade 0.22s ease-out; }
+
+  /* Number fields: no tiny up/down arrows (they waste room and are too small to tap; the keypad is used instead) */
+  input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+  input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+}
+@keyframes m-sheet-up { from { transform: translateY(100%); } }
+@keyframes m-fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  dialog[open], dialog[open]::backdrop { animation: none; }
+  .m-tile:active .m-tile-icon { transform: none; }
+}

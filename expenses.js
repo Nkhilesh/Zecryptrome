@@ -2,15 +2,12 @@
 
 const $ = (id) => document.getElementById(id);
 const expenseDialog = $("expenseDialog"), expenseForm = $("expenseForm");
-const subDialog = $("subDialog"), subForm = $("subForm");
 const limitsDialog = $("limitsDialog"), limitsForm = $("limitsForm");
-const quickDialog = $("quickDialog"), quickItemsForm = $("quickItemsForm");
 
 let data = loadExpenseData();
 if (syncSubscriptions(data) > 0) save(false); // post subscription charges that came due
 
 let editingExpenseId = null;
-let editingSubId = null;
 
 const LEVEL_STYLES = {
     ok: { bar: "bg-teal-600", box: "" },
@@ -123,9 +120,7 @@ function addExpense(expense, label) {
 // ---------- render ----------
 function render() {
     renderSummary();
-    renderQuick();
     renderLimits();
-    renderSubscriptions();
     renderHistory();
 }
 
@@ -165,15 +160,6 @@ function renderSummary() {
     }
 }
 
-function renderQuick() {
-    const box = $("quickChips");
-    box.innerHTML = "";
-    for (const q of data.quickItems) {
-        box.appendChild(smallButton(`${q.label} · ${formatMoney(q.amountCents)}`, () =>
-            addExpense({ description: q.label, amountCents: q.amountCents, category: q.category, date: expIsoDate() })));
-    }
-}
-
 function renderLimits() {
     const box = $("limitList");
     box.innerHTML = "";
@@ -198,46 +184,6 @@ function renderLimits() {
     }
 }
 
-
-function renderSubscriptions() {
-    const ul = $("subList");
-    ul.innerHTML = "";
-    const active = data.subscriptions.filter((s) => s.active);
-    const monthly = active.reduce((s, x) => s + subscriptionMonthly(x), 0);
-    $("subTotal").textContent = data.subscriptions.length
-        ? `${formatMoney(monthly)} a month · ${formatMoney(monthly * 12)} a year`
-        : "Netflix, Spotify, gym… add them once and they're logged every time they renew.";
-
-    const cycleWord = { weekly: "week", monthly: "month", yearly: "year" };
-    for (const s of [...data.subscriptions].sort((a, b) => (b.active - a.active) || a.nextDate.localeCompare(b.nextDate))) {
-        const li = document.createElement("li");
-        li.className = "rounded-2xl border border-slate-200 p-4 dark:border-neutral-800" + (s.active ? "" : " opacity-60");
-        li.innerHTML = `
-            <div class="flex items-start justify-between gap-3">
-              <div><p class="n font-medium"></p><p class="d text-xs text-slate-500 dark:text-neutral-400"></p></div>
-              <span class="a font-semibold"></span>
-            </div>
-            <div class="actions mt-3 flex justify-end gap-2"></div>`;
-        li.querySelector(".n").textContent = s.name;
-        li.querySelector(".d").textContent = s.active
-            ? `${s.category} · next charge ${prettyDate(s.nextDate)}`
-            : `${s.category} · paused`;
-        li.querySelector(".a").textContent = `${formatMoney(s.amountCents)} / ${cycleWord[s.cycle]}`;
-        const actions = li.querySelector(".actions");
-        actions.appendChild(smallButton(s.active ? "Pause" : "Resume", () => {
-            s.active = !s.active;
-            if (s.active) {
-                // Don't back-charge the paused period: jump to the next upcoming date
-                const today = expIsoDate();
-                while (s.nextDate < today) s.nextDate = nextBillingDate(s.nextDate, s.cycle, s.day);
-                syncSubscriptions(data);
-            }
-            save();
-        }));
-        actions.appendChild(smallButton("Edit", () => openSub(s)));
-        ul.appendChild(li);
-    }
-}
 
 // ---------- history ----------
 function periodRange(p) {
@@ -321,33 +267,36 @@ $("filterPeriod").addEventListener("change", () => {
 });
 
 // ---------- quick add ----------
-// "soda 30", "coca cola 1.5L 75", "30 soda", "bus Rs 35.50"
-function parseQuick(text) {
-    const t = text.trim();
-    let m = /^(.*?)\s*(?:rs\.?\s*)?(\d+(?:[.,]\d{1,2})?)\s*(?:rs)?$/i.exec(t);
-    if (m && m[1].trim()) return { description: capitalise(m[1].trim()), amountCents: inputToCents(m[2]) };
-    m = /^(?:rs\.?\s*)?(\d+(?:[.,]\d{1,2})?)\s*(?:rs)?\s+(.+)$/i.exec(t);
-    if (m) return { description: capitalise(m[2].trim()), amountCents: inputToCents(m[1]) };
-    return null;
+// Quick add: item name and price in separate boxes. Added for today; the category is picked from the name
+// (tap the expense in History to change the date, category or add a note).
+const quickForm = $("quickForm");
+function quickEntry() {
+    const description = capitalise(quickForm.elements.itemName.value.trim().replace(/\s+/g, " "));
+    const amountCents = inputToCents(quickForm.elements.price.value);
+    return { description, amountCents };
 }
-
-$("quickForm").elements.text.addEventListener("input", (e) => {
-    const p = parseQuick(e.target.value);
-    $("quickHint").textContent = p && p.amountCents > 0
-        ? `→ ${p.description} · ${formatMoney(p.amountCents)} · ${autoCategory(p.description)} · today`
-        : e.target.value.trim() ? "Type what you bought and the price, e.g. soda 30" : "";
+function updateQuickHint() {
+    const { description, amountCents } = quickEntry();
+    $("quickHint").textContent = description && amountCents > 0
+        ? `→ ${description} · ${formatMoney(amountCents)} · ${autoCategory(description)} · today`
+        : "";
+}
+quickForm.elements.itemName.addEventListener("input", updateQuickHint);
+quickForm.elements.price.addEventListener("input", updateQuickHint);
+// Enter in the item box moves on to the price box
+quickForm.elements.itemName.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !quickForm.elements.price.value) { e.preventDefault(); quickForm.elements.price.focus(); }
 });
 
-$("quickForm").addEventListener("submit", (e) => {
+quickForm.addEventListener("submit", (e) => {
     e.preventDefault();
-    const p = parseQuick(e.target.elements.text.value);
-    if (!p || !(p.amountCents > 0)) {
-        $("quickHint").textContent = "Type what you bought and the price, e.g. soda 30";
-        return;
-    }
-    addExpense({ ...p, category: autoCategory(p.description), date: expIsoDate() });
-    e.target.reset();
+    const { description, amountCents } = quickEntry();
+    if (!description) { $("quickHint").textContent = "Type what you bought."; quickForm.elements.itemName.focus(); return; }
+    if (!(amountCents > 0)) { $("quickHint").textContent = "Type the price."; quickForm.elements.price.focus(); return; }
+    addExpense({ description, amountCents, category: autoCategory(description), date: expIsoDate() });
+    quickForm.reset();
     $("quickHint").textContent = "";
+    quickForm.elements.itemName.focus();
 });
 
 // ---------- expense dialog ----------
@@ -374,7 +323,6 @@ expenseForm.elements.description.addEventListener("input", (e) => {
 });
 expenseForm.elements.category.addEventListener("change", (e) => { e.target.dataset.touched = "1"; });
 
-$("add-btn").addEventListener("click", () => openExpense());
 $("expenseCancel").addEventListener("click", () => expenseDialog.close());
 
 expenseForm.addEventListener("submit", (e) => {
@@ -412,53 +360,6 @@ $("expenseDelete").addEventListener("click", () => {
     });
 });
 
-// ---------- subscription dialog ----------
-function openSub(sub = null) {
-    editingSubId = sub ? sub.id : null;
-    subForm.reset();
-    const f = subForm.elements;
-    fillCategorySelect(f.category, sub ? sub.category : "Subscriptions");
-    f.name.value = sub?.name || "";
-    f.amount.value = sub ? centsToInput(sub.amountCents) : "";
-    f.cycle.value = sub?.cycle || "monthly";
-    f.nextDate.value = sub?.nextDate || expIsoDate();
-    $("subTitle").textContent = sub ? "Edit subscription" : "Add subscription";
-    $("subDelete").classList.toggle("hidden", !sub);
-    $("subError").textContent = "";
-    subDialog.showModal();
-}
-$("addSub").addEventListener("click", () => openSub());
-$("subCancel").addEventListener("click", () => subDialog.close());
-
-subForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const f = subForm.elements;
-    const amountCents = inputToCents(f.amount.value);
-    if (!(amountCents > 0)) { $("subError").textContent = "Enter a price above zero."; return; }
-    const fields = {
-        name: f.name.value.trim(),
-        amountCents,
-        cycle: f.cycle.value,
-        category: f.category.value,
-        nextDate: f.nextDate.value,
-        day: Number(f.nextDate.value.slice(8, 10)),
-    };
-    if (editingSubId != null) Object.assign(data.subscriptions.find((s) => s.id === editingSubId), fields);
-    else data.subscriptions.push({ id: newExpenseId(), active: true, ...fields });
-    const posted = syncSubscriptions(data);
-    subDialog.close();
-    save();
-    toast(`Saved ${fields.name}.` + (posted ? ` ${posted} charge${posted === 1 ? "" : "s"} added to expenses.` : ""));
-});
-
-$("subDelete").addEventListener("click", () => {
-    const s = data.subscriptions.find((x) => x.id === editingSubId);
-    if (!confirm(`Delete "${s.name}"? Past charges stay in your history.`)) return;
-    data.subscriptions = data.subscriptions.filter((x) => x.id !== editingSubId);
-    subDialog.close();
-    save();
-});
-
 // ---------- limits dialog ----------
 $("editLimits").addEventListener("click", () => {
     limitsForm.elements.total.value = data.limits.total ? centsToInput(data.limits.total) : "";
@@ -489,47 +390,6 @@ limitsForm.addEventListener("submit", (e) => {
         if (c > 0) data.limits.byCategory[input.dataset.category] = c;
     }
     limitsDialog.close();
-    save();
-});
-
-// ---------- quick buttons dialog ----------
-function quickRow(item = { label: "", amountCents: null, category: "Food & drinks" }) {
-    const row = document.createElement("div");
-    row.className = "flex gap-2";
-    const cls = "rounded-lg border p-2 text-sm dark:border-neutral-700 dark:bg-neutral-900";
-    const label = Object.assign(document.createElement("input"), { value: item.label, placeholder: "Item", className: `${cls} min-w-0 flex-1` });
-    label.dataset.f = "label";
-    const amount = Object.assign(document.createElement("input"), { type: "number", step: "0.01", min: "0", placeholder: "Rs", className: `${cls} w-20` });
-    amount.dataset.f = "amount";
-    if (item.amountCents != null) amount.value = centsToInput(item.amountCents);
-    const cat = document.createElement("select");
-    cat.className = `${cls} w-28`;
-    cat.dataset.f = "category";
-    fillCategorySelect(cat, item.category);
-    label.addEventListener("change", () => { if (label.value) cat.value = autoCategory(label.value); });
-    const del = Object.assign(document.createElement("button"), { type: "button", textContent: "✕", className: "px-1 text-slate-400 hover:text-red-500" });
-    del.setAttribute("aria-label", "Remove");
-    del.addEventListener("click", () => row.remove());
-    row.append(label, amount, cat, del);
-    $("quickRows").appendChild(row);
-}
-$("editQuick").addEventListener("click", () => {
-    $("quickRows").innerHTML = "";
-    data.quickItems.forEach(quickRow);
-    quickDialog.showModal();
-});
-$("addQuickRow").addEventListener("click", () => quickRow());
-$("quickCancel").addEventListener("click", () => quickDialog.close());
-quickItemsForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-    data.quickItems = [...$("quickRows").children]
-        .map((row) => ({
-            label: row.querySelector('[data-f="label"]').value.trim(),
-            amountCents: inputToCents(row.querySelector('[data-f="amount"]').value),
-            category: row.querySelector('[data-f="category"]').value,
-        }))
-        .filter((q) => q.label && q.amountCents > 0);
-    quickDialog.close();
     save();
 });
 
